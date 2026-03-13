@@ -1,6 +1,6 @@
 # Setup Guide
 
-Complete setup instructions for the Symphony Monitoring Demo.
+Complete setup instructions for Symphony Hub.
 
 ---
 
@@ -20,12 +20,12 @@ Before you begin, ensure you have:
 ## Step 1: Clone the Repository
 
 ```bash
-# Clone the repository (use your actual repo URL)
-git clone <your-repo-url>
-cd symphony-monitoring-demo
+# Clone the repository
+git clone https://github.com/stussysenik/symphony-hub.git
+cd symphony-hub
 
 # Or if you already have the files, just navigate there
-cd /path/to/symphony-setup
+cd /path/to/symphony-hub
 ```
 
 ---
@@ -424,4 +424,4 @@ If you encounter issues not covered here:
 
 ---
 
-**Setup complete?** → See [LINEAR-WORKFLOW.md](LINEAR-WORKFLOW.md) to start using the monitoring demo!
+**Setup complete?** → See [LINEAR-GOLDEN-RULE.md](LINEAR-GOLDEN-RULE.md) for a quick-start guide, or [LINEAR-WORKFLOW.md](LINEAR-WORKFLOW.md) for the complete workflow!

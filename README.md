@@ -1,10 +1,10 @@
-# Symphony Monitoring Demo
+# Symphony Hub
 
-> Interactive monitoring tools for Symphony autonomous agents. Watch agents work in real-time with multi-pane dashboards, Linear integration, and detailed progress tracking.
+> Central hub for monitoring and managing Symphony autonomous agents. Watch agents work in real-time with multi-pane dashboards, Linear integration, and detailed progress tracking.
 
 ## What Is This?
 
-This is a **monitoring demo** for Symphony's autonomous agent system. It provides custom-built tools to watch Symphony agents work in real-time as they autonomously complete tasks from Linear issues.
+**Symphony Hub** is your command center for Symphony's autonomous agent system. It provides powerful monitoring tools and workflows to watch Symphony agents work in real-time as they autonomously complete tasks from Linear issues.
 
 **What you can do:**
 - 🎬 Launch agents from Linear issues
@@ -38,7 +38,8 @@ These files are part of the Symphony system:
 ### Documentation
 - `README.md` - This file (project overview)
 - `SETUP.md` - Detailed setup instructions
-- `LINEAR-WORKFLOW.md` - Linear integration guide
+- `LINEAR-GOLDEN-RULE.md` - **START HERE** - Minimal quick-start guide
+- `LINEAR-WORKFLOW.md` - Complete Linear integration guide
 - `MONITORING-README.md` - Monitoring tools reference
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
 
@@ -55,8 +56,8 @@ These files are part of the Symphony system:
 
 ```bash
 # 1. Clone this repository
-git clone <your-repo-url>
-cd symphony-monitoring-demo
+git clone https://github.com/stussysenik/symphony-hub.git
+cd symphony-hub
 
 # 2. Install dependencies (macOS)
 brew install tmux watch
@@ -137,7 +138,7 @@ See `DASHBOARD-GUIDE.md` for detailed dashboard usage.
 ## Repository Structure
 
 ```
-symphony-setup/
+symphony-hub/
 ├── Scripts (Monitoring Tools - Custom Built)
 │   ├── demo.sh              # Interactive launcher
 │   ├── watch-demo.sh        # tmux multi-pane dashboard
@@ -170,6 +171,7 @@ symphony-setup/
 
 ## Documentation
 
+- **[LINEAR-GOLDEN-RULE.md](LINEAR-GOLDEN-RULE.md)** - **START HERE** - Minimal quick-start guide
 - **[SETUP.md](SETUP.md)** - Detailed setup and installation guide
 - **[LINEAR-WORKFLOW.md](LINEAR-WORKFLOW.md)** - Complete Linear integration workflow
 - **[MONITORING-README.md](MONITORING-README.md)** - Monitoring tools reference
@@ -300,7 +302,7 @@ For questions or issues:
 
 ## License
 
-This monitoring demo is provided as-is for use with Symphony autonomous agents.
+Symphony Hub is provided as-is for use with Symphony autonomous agents.
 
 ---
 
