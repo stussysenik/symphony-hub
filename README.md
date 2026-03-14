@@ -12,6 +12,8 @@
 - 📊 Track Linear issue progress (state, comments, PRs)
 - 🔍 Watch git activity, file changes, and events
 - 🌐 View agent work in Phoenix web dashboard
+- 🖼️ Feed visual mockups to agents (multimodal vision)
+- 🖥️ Use the Go TUI dashboard for terminal-native monitoring
 
 ## What's Included
 
@@ -35,6 +37,36 @@ These files are part of the Symphony system:
 - `pids/` - Process IDs (generated at runtime)
 - `workspaces/` - Agent work directories (generated at runtime)
 
+### Go TUI Dashboard
+Terminal-native monitoring built with Go + Charm (bubbletea, bubbles, lipgloss):
+
+| Feature | Description |
+|---------|-------------|
+| Issues pane | Linear issues with state, cursor navigation |
+| Agents pane | Active agent status, color-coded |
+| Events pane | Scrollable event stream from logs |
+| Project switcher | Switch between configured projects |
+| Auto-refresh | 5s Linear API, 2s log polling |
+
+```bash
+# Build and run
+cd tui && make build
+./launch.sh tui
+
+# Or start everything + TUI
+./launch.sh start --tui
+```
+
+### Vision: Multimodal Agent Input
+Agents can SEE mockups and screenshots attached to Linear issues:
+- Automatic collection of image attachments from Linear
+- Scans project `design/` and `assets/` directories
+- Multimodal prompts with text + images sent to Codex
+- Screenshot comparison tool for implementation verification
+- Optional Figma MCP integration for design tokens
+
+See `docs/VISION.md` for the full guide.
+
 ### Documentation
 - `README.md` - This file (project overview)
 - `SETUP.md` - Detailed setup instructions
@@ -42,6 +74,10 @@ These files are part of the Symphony system:
 - `LINEAR-WORKFLOW.md` - Complete Linear integration guide
 - `MONITORING-README.md` - Monitoring tools reference
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
+- `docs/RESEARCH.md` - What we learned from Symphony
+- `docs/DECISIONS.md` - Why we built Hub this way
+- `docs/ARCHITECTURE.md` - How Hub is structured
+- `docs/VISION.md` - Visual assets guide
 
 ---
 
@@ -139,27 +175,46 @@ See `DASHBOARD-GUIDE.md` for detailed dashboard usage.
 
 ```
 symphony-hub/
-├── Scripts (Monitoring Tools - Custom Built)
+├── Scripts (Monitoring Tools)
 │   ├── demo.sh              # Interactive launcher
 │   ├── watch-demo.sh        # tmux multi-pane dashboard
 │   ├── watch-workspace.sh   # Git monitor
 │   ├── watch-events.sh      # Event highlighter
 │   └── watch-linear.sh      # Linear status monitor
 │
-├── Symphony Core (Existing)
-│   ├── launch.sh            # Multi-instance launcher
-│   └── projects.yml         # Project configuration
+├── Symphony Core
+│   ├── launch.sh            # Multi-instance launcher (+ --tui, health)
+│   └── projects.yml         # Project configuration (+ assets config)
 │
-├── Documentation (Custom Built)
+├── tui/                     # Go TUI Dashboard
+│   ├── main.go              # Entry point
+│   ├── model.go             # Bubbletea Model
+│   ├── update.go            # Message handling
+│   ├── view.go              # Rendering
+│   ├── theme.go             # Color palette
+│   ├── help.go              # Help overlay
+│   ├── Makefile             # Build targets
+│   ├── components/          # Pane sub-models
+│   ├── linear/              # Linear API client
+│   └── parser/              # Log file parser
+│
+├── docs/                    # Research & Architecture
+│   ├── RESEARCH.md          # What we learned
+│   ├── DECISIONS.md         # Why we built it this way
+│   ├── ARCHITECTURE.md      # How it's structured
+│   └── VISION.md            # Visual assets guide
+│
+├── Documentation
 │   ├── README.md            # This file
 │   ├── SETUP.md             # Setup instructions
+│   ├── LINEAR-GOLDEN-RULE.md # Quick-start guide
 │   ├── LINEAR-WORKFLOW.md   # Linear integration guide
-│   ├── MONITORING-README.md # Monitoring tools reference
-│   └── DASHBOARD-GUIDE.md   # Dashboard usage guide
+│   └── MONITORING-README.md # Monitoring tools reference
 │
 ├── Configuration
 │   ├── .env.local.example   # Template (committed)
-│   └── .env.local           # Your config (NOT committed)
+│   ├── .env.local           # Your config (NOT committed)
+│   └── figma-mcp.json       # Figma MCP server config
 │
 └── Runtime (Git Ignored)
     ├── logs/                # Symphony logs
