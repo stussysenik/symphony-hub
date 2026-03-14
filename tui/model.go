@@ -67,6 +67,12 @@ type Model struct {
 	// showProjects toggles the project switcher overlay
 	showProjects bool
 
+	// showHelp toggles the help overlay
+	showHelp bool
+
+	// theme holds all lipgloss styles
+	theme Theme
+
 	// lastRefresh tracks when data was last fetched
 	lastRefresh time.Time
 
@@ -85,7 +91,8 @@ func NewModel(configPath string) Model {
 	m := Model{
 		configPath:    configPath,
 		activePane:    PaneIssues,
-		statusMessage: "Starting...",
+		statusMessage: "Starting... (? for help)",
+		theme:         DefaultTheme(),
 		issues:        components.NewIssuesModel(),
 		agents:        components.NewAgentsModel(),
 		events:        components.NewEventsModel(),

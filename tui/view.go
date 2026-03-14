@@ -12,42 +12,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Base styles — lipgloss uses a builder pattern for terminal styling.
-// Each style is immutable; methods return new copies.
-var (
-	// Pane border styles
-	activeBorderStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("39")). // Bright blue
-		Padding(0, 1)
-
-	inactiveBorderStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")). // Gray
-		Padding(0, 1)
-
-	// Header style for pane titles
-	headerStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("39"))
-
-	// Status bar at the bottom
-	statusBarStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
-
-	// Title bar at the top
-	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("205")). // Pink
-		Padding(0, 1)
-
-	// Project overlay style
-	projectOverlayStyle = lipgloss.NewStyle().
-		Border(lipgloss.DoubleBorder()).
-		BorderForeground(lipgloss.Color("205")).
-		Padding(1, 2)
-)
-
 // View renders the entire TUI. Called by bubbletea after every Update().
 func (m Model) View() string {
 	if m.quitting {
@@ -79,25 +43,36 @@ func (m Model) View() string {
 	if p := m.projects.ActiveProject(); p != nil {
 		activeProject = p.Name
 	}
-	title := titleStyle.Render(fmt.Sprintf("Symphony Hub — %s", activeProject))
+	title := m.theme.Title.Render(fmt.Sprintf("Symphony Hub — %s", activeProject))
 
 	// Status bar with refresh info
 	paneNames := []string{"Issues", "Agents", "Events"}
 	statusText := fmt.Sprintf(
-		" Active: %s | r: refresh | Tab: switch | 1-3: jump | p: projects | q: quit",
+		" Active: %s | r: refresh | ?: help | Tab: switch | p: projects | q: quit",
 		paneNames[m.activePane],
 	)
 	if m.statusMessage != "" {
 		statusText += " | " + m.statusMessage
 	}
-	status := statusBarStyle.Render(statusText)
+	status := m.theme.StatusBar.Render(statusText)
 
 	// Stack vertically: title, panes, status
 	view := lipgloss.JoinVertical(lipgloss.Left, title, panes, status)
 
-	// Overlay project switcher if open
-	if m.showProjects {
-		overlay := projectOverlayStyle.
+	// Help overlay takes priority
+	if m.showHelp {
+		overlay := m.theme.HelpOverlay.
+			Width(50).
+			Render(renderHelp())
+		view = lipgloss.Place(
+			m.windowWidth, m.windowHeight,
+			lipgloss.Center, lipgloss.Center,
+			overlay,
+			lipgloss.WithWhitespaceChars(" "),
+		)
+	} else if m.showProjects {
+		// Project switcher overlay
+		overlay := m.theme.ProjectOverlay.
 			Width(30).
 			Render(m.projects.View())
 		view = lipgloss.Place(
@@ -112,14 +87,14 @@ func (m Model) View() string {
 }
 
 // renderPane wraps content in a bordered box with a header.
-// The active pane gets a highlighted border.
+// The active pane gets a highlighted border from the theme.
 func (m Model) renderPane(title string, paneIndex int, width int, height int, content string) string {
-	style := inactiveBorderStyle
+	style := m.theme.InactiveBorder
 	if paneIndex == m.activePane {
-		style = activeBorderStyle
+		style = m.theme.ActiveBorder
 	}
 
-	header := headerStyle.Render(title)
+	header := m.theme.PaneHeader.Render(title)
 	body := header + "\n" + content
 
 	return style.

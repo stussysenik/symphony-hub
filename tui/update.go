@@ -85,17 +85,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 
-		case "p":
-			m.showProjects = !m.showProjects
-			if m.showProjects {
-				m.projects.SetFocused(true)
-			} else {
-				m.projects.SetFocused(false)
-				m.updateFocus()
-			}
+		// Toggle help overlay
+		case "?":
+			m.showHelp = !m.showHelp
 			return m, nil
 
+		case "p":
+			if !m.showHelp {
+				m.showProjects = !m.showProjects
+				if m.showProjects {
+					m.projects.SetFocused(true)
+				} else {
+					m.projects.SetFocused(false)
+					m.updateFocus()
+				}
+				return m, nil
+			}
+
 		case "esc":
+			if m.showHelp {
+				m.showHelp = false
+				return m, nil
+			}
 			if m.showProjects {
 				m.showProjects = false
 				m.projects.SetFocused(false)
