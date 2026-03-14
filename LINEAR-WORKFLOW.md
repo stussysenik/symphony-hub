@@ -8,14 +8,18 @@ Complete guide to using Linear with Symphony autonomous agents - how to start ag
 
 Symphony integrates with Linear to create a **fully automated workflow**:
 
-1. You create an issue in Linear
-2. Symphony detects it and starts an agent
-3. Agent works autonomously
-4. Agent posts updates to Linear
-5. Agent creates PR and links it
-6. You review and merge
+1. You capture an issue in Linear
+2. Optional recommended intake: issue starts in `Triage`
+3. You move the issue to `Todo` when it is ready for execution
+4. Symphony detects it and starts an agent
+5. Agent works autonomously
+6. Agent posts updates to Linear
+7. Agent creates PR and links it
+8. You review and merge
 
-**No manual triggering needed!**
+The execution trigger is still `Todo`. If you want a lighter-weight intake flow, use `Triage` as your inbox and only move accepted work to `Todo`.
+
+See [`LINEAR-INTAKE.md`](LINEAR-INTAKE.md) for the recommended setup.
 
 ---
 
@@ -29,6 +33,8 @@ Symphony continuously polls your Linear project:
 - **What it watches:** Issues in "Todo" state
 - **Project:** Configured in `projects.yml` (e.g., "Creative Playground")
 - **Team:** Configured team prefix (e.g., "CRE")
+
+`Triage` is safe to use as an inbox because Symphony does not start work from that state.
 
 ### Configuration
 
@@ -48,15 +54,16 @@ Symphony watches for new issues in the "Creative Playground" project with "CRE" 
 
 ## Starting an Agent from Linear
 
-### Step 1: Create a Linear Issue
+### Step 1: Capture a Linear Issue
 
 1. Go to your Linear workspace
 2. Navigate to the configured project (e.g., "Creative Playground")
 3. Click "New Issue" or press `C`
-4. Fill in:
+4. Recommended: start from a Linear form template
+5. Fill in:
    - **Title:** Clear description of the task
    - **Description:** Detailed requirements (the more detail, the better)
-   - **State:** Set to **"Todo"** (critical!)
+   - **State:** Use **"Triage"** for intake, or **"Todo"** if ready to execute immediately
    - **Project:** Select the configured project
 
 **Example:**
@@ -70,7 +77,16 @@ Add a dark mode toggle switch to the settings page.
 - Should follow the existing UI patterns
 ```
 
-### Step 2: Wait for Symphony to Detect It
+### Step 2: Move to Todo When Ready
+
+If you created the issue in `Triage`, do a quick routing pass:
+
+1. Confirm the project/team is correct
+2. Add or accept labels
+3. Attach any needed screenshots or mockups
+4. Move the issue to `Todo`
+
+### Step 3: Wait for Symphony to Detect It
 
 Symphony will:
 1. Poll Linear and detect the new issue
@@ -80,7 +96,7 @@ Symphony will:
 
 **Timeline:** Usually 5-30 seconds
 
-### Step 3: Agent Starts Working
+### Step 4: Agent Starts Working
 
 The agent will:
 1. Create workspace directory
@@ -101,6 +117,7 @@ Watch the issue state to see high-level progress:
 
 | State | Emoji | Meaning |
 |-------|-------|---------|
+| **Triage** | 🧭 | New intake, being categorized |
 | **Todo** | 📋 | Waiting for Symphony to pick up |
 | **In Progress** | ⚡ | Agent actively working |
 | **Human Review** | 👀 | Agent finished, PR ready for review |

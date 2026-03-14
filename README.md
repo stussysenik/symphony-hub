@@ -28,6 +28,12 @@ These are **new scripts** created specifically for this demo:
 | `watch-events.sh` | ⚡ Event highlighter for logs |
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 
+### Linear Intake Helper
+
+| Script | Purpose |
+|--------|---------|
+| `linear-new.sh` | 🧭 Open a pre-filled Linear issue composer with team/status/labels defaults |
+
 ### From Symphony (Existing)
 These files are part of the Symphony system:
 
@@ -71,6 +77,7 @@ See `docs/VISION.md` for the full guide.
 - `README.md` - This file (project overview)
 - `SETUP.md` - Detailed setup instructions
 - `LINEAR-GOLDEN-RULE.md` - **START HERE** - Minimal quick-start guide
+- `LINEAR-INTAKE.md` - Recommended intake setup for Triage + templates
 - `LINEAR-WORKFLOW.md` - Complete Linear integration guide
 - `MONITORING-README.md` - Monitoring tools reference
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
@@ -120,10 +127,12 @@ The demo will:
 
 Symphony watches your Linear project for new issues. To start an agent:
 
-1. **Create a Linear issue** in your configured project (e.g., "Creative Playground")
-2. **Symphony detects it** (polls every few seconds)
-3. **Agent starts automatically** - Creates workspace, clones repo, begins work
-4. **No manual trigger needed!**
+1. **Capture the issue in Linear**
+   - Recommended: create it in `Triage` from a template and let Linear help route it
+   - Fast path: create it directly in `Todo` if it is already implementation-ready
+2. **Move the issue to `Todo`** when you want Symphony to pick it up
+3. **Symphony detects it** (polls every few seconds)
+4. **Agent starts automatically** - Creates workspace, clones repo, begins work
 
 ### Monitoring Agent Progress
 
@@ -131,6 +140,7 @@ Symphony watches your Linear project for new issues. To start an agent:
 Watch your Linear issue for real-time updates:
 
 - **Issue State** - Shows progress:
+  - `Triage` → Intake inbox, not ready for agent execution yet
   - `Todo` → Agent hasn't started yet
   - `In Progress` → Agent actively working
   - `Human Review` → Agent finished, PR ready
@@ -180,7 +190,8 @@ symphony-hub/
 │   ├── watch-demo.sh        # tmux multi-pane dashboard
 │   ├── watch-workspace.sh   # Git monitor
 │   ├── watch-events.sh      # Event highlighter
-│   └── watch-linear.sh      # Linear status monitor
+│   ├── watch-linear.sh      # Linear status monitor
+│   └── linear-new.sh        # Pre-filled Linear issue composer launcher
 │
 ├── Symphony Core
 │   ├── launch.sh            # Multi-instance launcher (+ --tui, health)
@@ -208,6 +219,7 @@ symphony-hub/
 │   ├── README.md            # This file
 │   ├── SETUP.md             # Setup instructions
 │   ├── LINEAR-GOLDEN-RULE.md # Quick-start guide
+│   ├── LINEAR-INTAKE.md     # Intake setup for Triage + templates
 │   ├── LINEAR-WORKFLOW.md   # Linear integration guide
 │   └── MONITORING-README.md # Monitoring tools reference
 │
@@ -215,6 +227,9 @@ symphony-hub/
 │   ├── .env.local.example   # Template (committed)
 │   ├── .env.local           # Your config (NOT committed)
 │   └── figma-mcp.json       # Figma MCP server config
+│
+├── Linear Intake Templates
+│   └── linear-templates/    # Copy-ready template blueprints for Linear
 │
 └── Runtime (Git Ignored)
     ├── logs/                # Symphony logs
@@ -227,6 +242,7 @@ symphony-hub/
 ## Documentation
 
 - **[LINEAR-GOLDEN-RULE.md](LINEAR-GOLDEN-RULE.md)** - **START HERE** - Minimal quick-start guide
+- **[LINEAR-INTAKE.md](LINEAR-INTAKE.md)** - Recommended Triage + templates setup
 - **[SETUP.md](SETUP.md)** - Detailed setup and installation guide
 - **[LINEAR-WORKFLOW.md](LINEAR-WORKFLOW.md)** - Complete Linear integration workflow
 - **[MONITORING-README.md](MONITORING-README.md)** - Monitoring tools reference
@@ -240,6 +256,7 @@ symphony-hub/
 
 ```bash
 # Create Linear issue "Add new feature" (gets ID CRE-5)
+# Move it to Todo if it started in Triage
 # Symphony starts agent automatically
 
 # Monitor in real-time

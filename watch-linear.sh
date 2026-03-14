@@ -90,6 +90,7 @@ print()
 # State (with emoji)
 state = issue.get('state', {}).get('name', 'Unknown')
 state_emoji = {
+    'Triage': '🧭',
     'Todo': '⏸️ ',
     'In Progress': '⚡',
     'Human Review': '👀',
@@ -97,7 +98,8 @@ state_emoji = {
     'Done': '✅',
     'Rework': '🔄',
     'Backlog': '📋',
-    'Canceled': '❌'
+    'Canceled': '❌',
+    'Cancelled': '❌'
 }.get(state, '📋')
 print(f"{state_emoji}  State: {state}")
 

@@ -93,6 +93,7 @@ watch -c -n 5 './watch-linear.sh CRE-5'
 - Issue URL
 
 **States:**
+- 🧭 Triage
 - ⏸️  Todo
 - ⚡ In Progress
 - 👀 Human Review

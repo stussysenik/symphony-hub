@@ -15,7 +15,7 @@ flowchart LR
     E --> F[✅ Done!]
 ```
 
-**That's it.** Create an issue → Agent works → You merge.
+**That's it.** Capture the issue → Move it to `Todo` when ready → Agent works → You merge.
 
 ---
 
@@ -23,7 +23,7 @@ flowchart LR
 
 ### 1. Create the Linear Issue
 
-Go to Linear and create an issue in your configured project:
+Go to Linear and create an issue in your configured project. If your team uses `Triage`, start there and move to `Todo` when the issue is implementation-ready:
 
 ```
 Title: Add dark mode toggle to header
@@ -35,11 +35,11 @@ Add a dark mode toggle button to the top-right corner of the header.
 - Should persist user preference in localStorage
 - Should apply theme immediately without page refresh
 
-State: Todo
+State: Triage or Todo
 Project: Creative Playground
 ```
 
-**Hit Enter.** That's it for you. Now watch.
+**Hit Enter.** If the issue was created in `Triage`, move it to `Todo`. Now watch.
 
 ---
 
@@ -49,6 +49,7 @@ Project: Creative Playground
 
 ```
 [10:00:00] You create issue → CRE-42 created
+[10:00:10] You move issue from Triage → Todo
 [10:00:15] Symphony detects new "Todo" issue
 [10:00:18] Agent starts, creates workspace
 [10:00:20] Issue state changes: 📋 Todo → ⚡ In Progress
@@ -148,11 +149,12 @@ Add search
 
 Symphony only picks up issues in **"Todo"** state.
 
+- ✅ **Triage** → Intake inbox, agent does not start yet
 - ✅ **Todo** → Agent starts automatically
 - ❌ **Backlog** → Agent ignores it
 - ❌ **In Progress** (manual) → Agent ignores it
 
-**Set to Todo when you want an agent to work on it.**
+**Use Triage for capture and Todo for execution.**
 
 ---
 
@@ -188,6 +190,7 @@ Agents create PRs automatically, but **YOU** decide when to merge.
 
 | State | Emoji | Meaning | What to Do |
 |-------|-------|---------|------------|
+| **Triage** | 🧭 | New intake, still being categorized | Refine it, then move to `Todo` when ready |
 | **Todo** | 📋 | Waiting for agent to start | Nothing - agent will pick it up automatically |
 | **In Progress** | ⚡ | Agent actively working | Watch progress in Linear workpad |
 | **Human Review** | 👀 | PR ready for your review | Review and merge the PR |
@@ -202,7 +205,7 @@ Agents create PRs automatically, but **YOU** decide when to merge.
 ```
 Title: Fix typo on homepage
 Description: Change "recieve" to "receive" on homepage hero text
-State: Todo
+State: Triage or Todo
 ```
 
 Agent will:

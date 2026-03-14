@@ -19,19 +19,19 @@ import (
 
 // Issue represents a Linear issue for display in the table.
 type Issue struct {
-	ID       string
-	Title    string
-	State    string
-	Updated  string
+	ID      string
+	Title   string
+	State   string
+	Updated string
 }
 
 // IssuesModel manages the issues list pane state.
 type IssuesModel struct {
-	issues   []Issue
-	cursor   int  // which row is highlighted
-	width    int
-	height   int
-	focused  bool
+	issues  []Issue
+	cursor  int // which row is highlighted
+	width   int
+	height  int
+	focused bool
 }
 
 // NewIssuesModel creates an IssuesModel with empty data.
@@ -92,15 +92,21 @@ func (m IssuesModel) Update(msg tea.Msg) (IssuesModel, tea.Cmd) {
 // stateEmoji maps Linear issue states to visual indicators.
 func stateEmoji(state string) string {
 	switch state {
+	case "Triage":
+		return "[~]"
 	case "Todo":
 		return "[ ]"
 	case "In Progress":
 		return "[>]"
 	case "Human Review":
 		return "[?]"
+	case "Merging":
+		return "[=]"
+	case "Rework":
+		return "[!]"
 	case "Done":
 		return "[x]"
-	case "Cancelled":
+	case "Canceled", "Cancelled":
 		return "[-]"
 	default:
 		return "[ ]"
