@@ -8,7 +8,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -41,6 +40,12 @@ var (
 		Bold(true).
 		Foreground(lipgloss.Color("205")). // Pink
 		Padding(0, 1)
+
+	// Project overlay style
+	projectOverlayStyle = lipgloss.NewStyle().
+		Border(lipgloss.DoubleBorder()).
+		BorderForeground(lipgloss.Color("205")).
+		Padding(1, 2)
 )
 
 // View renders the entire TUI. Called by bubbletea after every Update().
@@ -55,34 +60,51 @@ func (m Model) View() string {
 	}
 
 	// Layout calculations
-	// Reserve 3 lines: 1 for title bar, 1 for status bar, 1 for padding
 	availableHeight := m.windowHeight - 4
-	// Divide width into 3 columns with gaps
-	paneWidth := (m.windowWidth - 6) / 3 // -6 for borders and gaps
+	paneWidth := (m.windowWidth - 6) / 3
 	if paneWidth < 15 {
 		paneWidth = 15
 	}
 
-	// Build the three panes
-	issuesPane := m.renderPane("Issues", PaneIssues, paneWidth, availableHeight, m.renderIssues())
-	agentsPane := m.renderPane("Agents", PaneAgents, paneWidth, availableHeight, m.renderAgents())
-	eventsPane := m.renderPane("Events", PaneEvents, paneWidth, availableHeight, m.renderEvents())
+	// Build the three panes using component views
+	issuesPane := m.renderPane("Issues [1]", PaneIssues, paneWidth, availableHeight, m.issues.View())
+	agentsPane := m.renderPane("Agents [2]", PaneAgents, paneWidth, availableHeight, m.agents.View())
+	eventsPane := m.renderPane("Events [3]", PaneEvents, paneWidth, availableHeight, m.events.View())
 
 	// Join panes horizontally
 	panes := lipgloss.JoinHorizontal(lipgloss.Top, issuesPane, " ", agentsPane, " ", eventsPane)
 
 	// Title bar
-	title := titleStyle.Render("Symphony Hub")
+	activeProject := "none"
+	if p := m.projects.ActiveProject(); p != nil {
+		activeProject = p.Name
+	}
+	title := titleStyle.Render(fmt.Sprintf("Symphony Hub — %s", activeProject))
 
 	// Status bar
 	paneNames := []string{"Issues", "Agents", "Events"}
 	status := statusBarStyle.Render(fmt.Sprintf(
-		" Active: %s | Tab: switch pane | 1-3: jump | q: quit",
+		" Active: %s | Tab: switch | 1-3: jump | p: projects | q: quit",
 		paneNames[m.activePane],
 	))
 
 	// Stack vertically: title, panes, status
-	return lipgloss.JoinVertical(lipgloss.Left, title, panes, status)
+	view := lipgloss.JoinVertical(lipgloss.Left, title, panes, status)
+
+	// Overlay project switcher if open
+	if m.showProjects {
+		overlay := projectOverlayStyle.
+			Width(30).
+			Render(m.projects.View())
+		view = lipgloss.Place(
+			m.windowWidth, m.windowHeight,
+			lipgloss.Center, lipgloss.Center,
+			overlay,
+			lipgloss.WithWhitespaceChars(" "),
+		)
+	}
+
+	return view
 }
 
 // renderPane wraps content in a bordered box with a header.
@@ -100,35 +122,4 @@ func (m Model) renderPane(title string, paneIndex int, width int, height int, co
 		Width(width).
 		Height(height).
 		Render(body)
-}
-
-// renderIssues formats the issues table as a simple aligned text block.
-func (m Model) renderIssues() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%-8s %-20s %-12s %s\n", "ID", "Title", "State", "Updated"))
-	sb.WriteString(strings.Repeat("─", 50) + "\n")
-	for _, row := range m.issueRows {
-		title := row[1]
-		if len(title) > 20 {
-			title = title[:17] + "..."
-		}
-		sb.WriteString(fmt.Sprintf("%-8s %-20s %-12s %s\n", row[0], title, row[2], row[3]))
-	}
-	return sb.String()
-}
-
-// renderAgents formats the agents table.
-func (m Model) renderAgents() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%-10s %-10s %-8s %s\n", "Name", "Status", "Issue", "Duration"))
-	sb.WriteString(strings.Repeat("─", 40) + "\n")
-	for _, row := range m.agentRows {
-		sb.WriteString(fmt.Sprintf("%-10s %-10s %-8s %s\n", row[0], row[1], row[2], row[3]))
-	}
-	return sb.String()
-}
-
-// renderEvents formats the event stream as a scrollable list.
-func (m Model) renderEvents() string {
-	return strings.Join(m.eventLines, "\n")
 }

@@ -2,16 +2,18 @@
 //
 // Responsibility: Define the application state (Model) and its initialization.
 // The Model holds all UI state: which pane is active, window dimensions,
-// and the data displayed in each pane. In the Elm Architecture, the Model is
-// the single source of truth — all rendering and updates derive from it.
+// and the sub-model components for each pane. In the Elm Architecture, the
+// Model is the single source of truth — all rendering and updates derive from it.
 package main
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"symphony-hub/tui/components"
 )
 
 // Pane identifiers — used to track which pane is focused.
 // The TUI has a 3-column layout: Issues | Agents | Events.
+// Projects pane is toggled via 'p' key as an overlay.
 const (
 	PaneIssues  = 0
 	PaneAgents  = 1
@@ -36,39 +38,56 @@ type Model struct {
 	// quitting signals that the user wants to exit
 	quitting bool
 
-	// issueRows holds placeholder data for the issues pane
-	issueRows [][]string
+	// showProjects toggles the project switcher overlay
+	showProjects bool
 
-	// agentRows holds placeholder data for the agents pane
-	agentRows [][]string
-
-	// eventLines holds placeholder data for the events pane
-	eventLines []string
+	// Sub-model components — each manages its own state and rendering
+	issues   components.IssuesModel
+	agents   components.AgentsModel
+	events   components.EventsModel
+	projects components.ProjectsModel
 }
 
-// NewModel creates a Model with sensible defaults.
+// NewModel creates a Model with sensible defaults and placeholder data.
 func NewModel(configPath string) Model {
-	return Model{
-		configPath: configPath,
-		activePane: PaneIssues,
-		issueRows: [][]string{
-			{"CRE-42", "Add dark mode toggle", "In Progress", "2m ago"},
-			{"CRE-41", "Fix nav layout", "Human Review", "15m ago"},
-			{"CRE-40", "Update footer links", "Done", "1h ago"},
-		},
-		agentRows: [][]string{
-			{"agent-1", "Working", "CRE-42", "2m 15s"},
-			{"agent-2", "Idle", "—", "—"},
-		},
-		eventLines: []string{
-			"[10:00:15] Agent started on CRE-42",
-			"[10:00:18] Workspace created: v0-ipod/CRE-42",
-			"[10:00:20] State change: Todo → In Progress",
-			"[10:00:25] Plan posted to Linear workpad",
-			"[10:02:00] File created: src/components/DarkModeToggle.tsx",
-			"[10:04:12] Tests passing (3/3)",
-		},
+	m := Model{
+		configPath:   configPath,
+		activePane:   PaneIssues,
+		issues:       components.NewIssuesModel(),
+		agents:       components.NewAgentsModel(),
+		events:       components.NewEventsModel(),
+		projects:     components.NewProjectsModel(),
 	}
+
+	// Load placeholder data for demo purposes.
+	// Layers 4+ will replace this with real data from Linear API and log parser.
+	m.issues.SetIssues([]components.Issue{
+		{ID: "CRE-42", Title: "Add dark mode toggle", State: "In Progress", Updated: "2m ago"},
+		{ID: "CRE-41", Title: "Fix nav layout", State: "Human Review", Updated: "15m ago"},
+		{ID: "CRE-40", Title: "Update footer links", State: "Done", Updated: "1h ago"},
+	})
+
+	m.agents.SetAgents([]components.Agent{
+		{Name: "agent-1", Status: "Working", Issue: "CRE-42", Duration: "2m 15s"},
+		{Name: "agent-2", Status: "Idle", Issue: "—", Duration: "—"},
+	})
+
+	m.events.SetEvents([]components.Event{
+		{Timestamp: "[10:00:15]", Type: "info", Message: "Agent started on CRE-42"},
+		{Timestamp: "[10:00:18]", Type: "file_change", Message: "Workspace created: v0-ipod/CRE-42"},
+		{Timestamp: "[10:00:20]", Type: "state_change", Message: "State: Todo → In Progress"},
+		{Timestamp: "[10:00:25]", Type: "info", Message: "Plan posted to Linear workpad"},
+		{Timestamp: "[10:02:00]", Type: "file_change", Message: "Created: src/components/DarkModeToggle.tsx"},
+		{Timestamp: "[10:04:12]", Type: "success", Message: "Tests passing (3/3)"},
+	})
+
+	m.projects.SetProjects([]components.Project{
+		{Name: "v0-ipod", GitHubURL: "https://github.com/stussysenik/v0-ipod.git", LinearProjectSlug: "dabd6fee0112", MaxAgents: 2},
+		{Name: "mymind-clone-web", GitHubURL: "https://github.com/stussysenik/mymind-clone-web.git", LinearProjectSlug: "372637c999d1", MaxAgents: 2},
+		{Name: "recap", GitHubURL: "https://github.com/stussysenik/recap.git", LinearProjectSlug: "15ec4aaf8ef1", MaxAgents: 2},
+	})
+
+	return m
 }
 
 // Init returns an initial command. For now, we just wait for the first
