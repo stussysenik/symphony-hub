@@ -7,6 +7,8 @@
 package main
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"symphony-hub/tui/components"
 )
@@ -21,17 +23,41 @@ const (
 	PaneCount   = 3
 )
 
+// Refresh intervals for data sources.
+// Linear is rate-limited so we poll less frequently.
+// Logs are local files so we can poll faster.
+const (
+	linearRefreshInterval = 5 * time.Second
+	logsRefreshInterval   = 2 * time.Second
+)
+
+// TickMsg is sent by the ticker to trigger data refresh.
+type TickMsg struct {
+	source string // "linear" or "logs"
+}
+
+// DataRefreshMsg carries refreshed data back to the model.
+type DataRefreshMsg struct {
+	issues []components.Issue
+	events []components.Event
+	err    error
+}
+
 // Model holds all application state for the bubbletea program.
-// Every field here is rendered by View() and modified by Update().
 type Model struct {
 	// configPath is the path to projects.yml
 	configPath string
 
-	// activePane tracks which column is currently focused (receives key events)
+	// logsRoot is the directory containing Symphony log files
+	logsRoot string
+
+	// linearAPIKey is the Linear API authentication key
+	linearAPIKey string
+
+	// activePane tracks which column is currently focused
 	activePane int
 
-	// windowWidth and windowHeight store the terminal dimensions,
-	// updated whenever the terminal is resized (tea.WindowSizeMsg)
+	// windowWidth and windowHeight store the terminal dimensions
 	windowWidth  int
 	windowHeight int
 
@@ -40,6 +66,12 @@ type Model struct {
 
 	// showProjects toggles the project switcher overlay
 	showProjects bool
+
+	// lastRefresh tracks when data was last fetched
+	lastRefresh time.Time
+
+	// statusMessage shows connection status or errors
+	statusMessage string
 
 	// Sub-model components — each manages its own state and rendering
 	issues   components.IssuesModel
@@ -51,16 +83,17 @@ type Model struct {
 // NewModel creates a Model with sensible defaults and placeholder data.
 func NewModel(configPath string) Model {
 	m := Model{
-		configPath:   configPath,
-		activePane:   PaneIssues,
-		issues:       components.NewIssuesModel(),
-		agents:       components.NewAgentsModel(),
-		events:       components.NewEventsModel(),
-		projects:     components.NewProjectsModel(),
+		configPath:    configPath,
+		activePane:    PaneIssues,
+		statusMessage: "Starting...",
+		issues:        components.NewIssuesModel(),
+		agents:        components.NewAgentsModel(),
+		events:        components.NewEventsModel(),
+		projects:      components.NewProjectsModel(),
 	}
 
 	// Load placeholder data for demo purposes.
-	// Layers 4+ will replace this with real data from Linear API and log parser.
+	// When Linear API key is set, real data replaces this on first tick.
 	m.issues.SetIssues([]components.Issue{
 		{ID: "CRE-42", Title: "Add dark mode toggle", State: "In Progress", Updated: "2m ago"},
 		{ID: "CRE-41", Title: "Fix nav layout", State: "Human Review", Updated: "15m ago"},
@@ -90,8 +123,26 @@ func NewModel(configPath string) Model {
 	return m
 }
 
-// Init returns an initial command. For now, we just wait for the first
-// WindowSizeMsg which bubbletea sends automatically on startup.
+// Init returns initial commands — starts the data refresh tickers.
+// In bubbletea, Cmd functions run asynchronously and send messages
+// back to Update() when they complete.
 func (m Model) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		tickLinear(),
+		tickLogs(),
+	)
+}
+
+// tickLinear creates a timer that fires a TickMsg for Linear refresh.
+func tickLinear() tea.Cmd {
+	return tea.Tick(linearRefreshInterval, func(t time.Time) tea.Msg {
+		return TickMsg{source: "linear"}
+	})
+}
+
+// tickLogs creates a timer that fires a TickMsg for log refresh.
+func tickLogs() tea.Cmd {
+	return tea.Tick(logsRefreshInterval, func(t time.Time) tea.Msg {
+		return TickMsg{source: "logs"}
+	})
 }

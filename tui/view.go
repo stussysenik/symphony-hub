@@ -81,12 +81,16 @@ func (m Model) View() string {
 	}
 	title := titleStyle.Render(fmt.Sprintf("Symphony Hub — %s", activeProject))
 
-	// Status bar
+	// Status bar with refresh info
 	paneNames := []string{"Issues", "Agents", "Events"}
-	status := statusBarStyle.Render(fmt.Sprintf(
-		" Active: %s | Tab: switch | 1-3: jump | p: projects | q: quit",
+	statusText := fmt.Sprintf(
+		" Active: %s | r: refresh | Tab: switch | 1-3: jump | p: projects | q: quit",
 		paneNames[m.activePane],
-	))
+	)
+	if m.statusMessage != "" {
+		statusText += " | " + m.statusMessage
+	}
+	status := statusBarStyle.Render(statusText)
 
 	// Stack vertically: title, panes, status
 	view := lipgloss.JoinVertical(lipgloss.Left, title, panes, status)
