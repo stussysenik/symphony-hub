@@ -403,6 +403,66 @@ Once setup is complete:
 
 ---
 
+## Optional: Figma MCP Integration
+
+Figma MCP lets agents query Figma designs directly for design tokens, component specs, and layout details.
+
+### Setup
+
+1. **Get a Figma access token** from https://www.figma.com/developers/api#access-tokens
+
+2. **Add to `.env.local`:**
+   ```bash
+   FIGMA_ACCESS_TOKEN=your_figma_token_here
+   ```
+
+3. **Reference the MCP config** in your Codex or Claude configuration:
+   ```bash
+   # The MCP server config is at figma-mcp.json
+   cat figma-mcp.json
+   ```
+
+4. **Verify** by checking the health output:
+   ```bash
+   ./launch.sh health
+   ```
+
+### What This Enables
+
+- Agents can query Figma files for design tokens (colors, typography, spacing)
+- Agents can inspect component structure and properties
+- Agents can extract layout measurements from Figma frames
+- Combined with vision (image attachments), agents get both visual and structured design data
+
+---
+
+## Optional: Go TUI Dashboard
+
+The TUI provides a terminal-native monitoring dashboard as an alternative to Phoenix LiveView.
+
+### Setup
+
+1. **Install Go** (1.21+):
+   ```bash
+   brew install go
+   ```
+
+2. **Build the TUI:**
+   ```bash
+   cd tui && make build
+   ```
+
+3. **Run:**
+   ```bash
+   # Standalone
+   ./launch.sh tui
+
+   # Or start Symphony + TUI together
+   ./launch.sh start --tui
+   ```
+
+---
+
 ## Getting Help
 
 If you encounter issues not covered here:
