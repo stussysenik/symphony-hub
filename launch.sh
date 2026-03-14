@@ -265,11 +265,84 @@ cmd_logs() {
     logs_project "$1"
 }
 
+cmd_tui() {
+    local tui_binary="${SCRIPT_DIR}/tui/symphony-hub"
+
+    # Check if TUI binary exists
+    if [ ! -f "${tui_binary}" ]; then
+        echo -e "${YELLOW}TUI binary not found. Building...${NC}"
+        if command -v go &> /dev/null; then
+            (cd "${SCRIPT_DIR}/tui" && go build -o symphony-hub .)
+            echo -e "${GREEN}  ✅ TUI built successfully${NC}"
+        else
+            echo -e "${RED}Error: Go is not installed. Install Go to use the TUI.${NC}"
+            echo -e "  brew install go"
+            exit 1
+        fi
+    fi
+
+    echo -e "${BLUE}[symphony]${NC} Launching TUI dashboard..."
+    exec "${tui_binary}" --config "${CONFIG_FILE}"
+}
+
+cmd_health() {
+    echo -e "${BLUE}[symphony]${NC} Health Check"
+    echo
+
+    # Check Symphony binary
+    echo -n "  Symphony binary: "
+    if [ -f "${SYMPHONY_BIN}" ]; then
+        echo -e "${GREEN}OK${NC} (${SYMPHONY_BIN})"
+    else
+        echo -e "${RED}NOT FOUND${NC}"
+    fi
+
+    # Check running instances
+    echo -n "  Running instances: "
+    local running=0
+    for project in $(get_projects); do
+        local pid_file="${PID_DIR}/${project}.pid"
+        if [ -f "${pid_file}" ]; then
+            local pid=$(cat "${pid_file}")
+            if ps -p "${pid}" > /dev/null 2>&1; then
+                running=$((running + 1))
+            fi
+        fi
+    done
+    echo -e "${GREEN}${running}${NC}"
+
+    # Check Linear API key
+    echo -n "  Linear API key: "
+    if [ -n "${LINEAR_API_KEY:-}" ]; then
+        echo -e "${GREEN}SET${NC} (${#LINEAR_API_KEY} chars)"
+    else
+        echo -e "${RED}NOT SET${NC}"
+    fi
+
+    # Check TUI binary
+    echo -n "  TUI binary: "
+    if [ -f "${SCRIPT_DIR}/tui/symphony-hub" ]; then
+        echo -e "${GREEN}OK${NC}"
+    else
+        echo -e "${YELLOW}NOT BUILT${NC} (run: cd tui && make build)"
+    fi
+
+    # Check Go
+    echo -n "  Go runtime: "
+    if command -v go &> /dev/null; then
+        echo -e "${GREEN}$(go version | awk '{print $3}')${NC}"
+    else
+        echo -e "${YELLOW}NOT INSTALLED${NC} (optional, for TUI)"
+    fi
+
+    echo
+}
+
 cmd_help() {
     cat << 'HELP'
 Symphony Multi-Instance Launcher
 
-Usage: ./launch.sh <command> [project-name]
+Usage: ./launch.sh <command> [options] [project-name]
 
 Commands:
   start [project]    Start Symphony instance(s)
@@ -277,11 +350,19 @@ Commands:
   restart [project]  Restart Symphony instance(s)
   status             Show status of all instances
   logs <project>     Tail logs for a project
+  tui                Launch Go TUI dashboard
+  health             Run health checks
   help               Show this help message
+
+Options:
+  --tui              Start all projects and launch TUI dashboard
 
 Examples:
   ./launch.sh start              # Start all projects
   ./launch.sh start v0-ipod      # Start only v0-ipod
+  ./launch.sh start --tui        # Start all + launch TUI
+  ./launch.sh tui                # Launch TUI only
+  ./launch.sh health             # Run health checks
   ./launch.sh stop               # Stop all projects
   ./launch.sh restart            # Restart all projects
   ./launch.sh status             # Show status of all instances
@@ -303,7 +384,20 @@ main() {
 
     case "${command}" in
         start)
-            cmd_start "$@"
+            # Check for --tui flag
+            local launch_tui=false
+            local args=()
+            for arg in "$@"; do
+                if [ "${arg}" = "--tui" ]; then
+                    launch_tui=true
+                else
+                    args+=("${arg}")
+                fi
+            done
+            cmd_start "${args[@]}"
+            if [ "${launch_tui}" = true ]; then
+                cmd_tui
+            fi
             ;;
         stop)
             cmd_stop "$@"
@@ -316,6 +410,12 @@ main() {
             ;;
         logs)
             cmd_logs "$@"
+            ;;
+        tui)
+            cmd_tui
+            ;;
+        health)
+            cmd_health
             ;;
         help|--help|-h)
             cmd_help

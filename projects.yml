@@ -28,13 +28,46 @@ projects:
     github_url: "https://github.com/stussysenik/v0-ipod.git"
     linear_project_slug: "dabd6fee0112"
     max_agents: 2
+    assets:
+      collect_attachments: true
+      scan_project_dirs: true
+      capture_screenshots: false
+      supported_formats:
+        - png
+        - jpg
+        - gif
+        - webp
+        - svg
+        - figma
 
   - name: "mymind-clone-web"
     github_url: "https://github.com/stussysenik/mymind-clone-web.git"
     linear_project_slug: "372637c999d1"
     max_agents: 2
+    assets:
+      collect_attachments: true
+      scan_project_dirs: true
+      capture_screenshots: false
+      supported_formats:
+        - png
+        - jpg
+        - gif
+        - webp
+        - svg
+        - figma
 
   - name: "recap"
     github_url: "https://github.com/stussysenik/recap.git"
     linear_project_slug: "15ec4aaf8ef1"
     max_agents: 2
+    assets:
+      collect_attachments: true
+      scan_project_dirs: true
+      capture_screenshots: false
+      supported_formats:
+        - png
+        - jpg
+        - gif
+        - webp
+        - svg
+        - figma
