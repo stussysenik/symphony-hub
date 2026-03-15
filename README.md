@@ -15,6 +15,16 @@
 - 🖼️ Feed visual mockups to agents (multimodal vision)
 - 🖥️ Use the Go TUI dashboard for terminal-native monitoring
 
+## Ecosystem
+
+| Repo | Role | Link |
+|------|------|------|
+| **symphony-hub** (this repo) | Operator interface: TUI, scripts, workflows | — |
+| **open-ai-symphony** | Core engine: orchestrator, dashboard, Codex client | [stussysenik/symphony](https://github.com/stussysenik/symphony) |
+| **mymind-clone-web** | Product repo where agent PRs land | [stussysenik/mymind-clone-web](https://github.com/stussysenik/mymind-clone-web) |
+
+See **[OPERATIONS.md](OPERATIONS.md)** for the full operator workflow, lifecycle diagram, and CLI reference.
+
 ## What's Included
 
 ### Custom-Built Monitoring Tools

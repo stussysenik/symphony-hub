@@ -19,40 +19,30 @@ workspace:
   root: /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
 hooks:
   after_create: |
-    git clone --depth 1 https://github.com/stussysenik/mymind-clone-web.git .
+    MAIN_REPO="/Users/s3nik/Desktop/mymind-clone-web"
+    WORKSPACE="$(pwd)"
+    ISSUE_ID="$(basename "$WORKSPACE")"
+    BRANCH="feature/${ISSUE_ID}"
 
-    # Auto-detect package manager and install dependencies
-    if [ -f "package.json" ]; then
-      if [ -f "bun.lockb" ]; then
-        bun install
-      elif [ -f "pnpm-lock.yaml" ]; then
-        pnpm install
-      elif [ -f "yarn.lock" ]; then
-        yarn install
-      else
-        npm install
-      fi
-    fi
+    cd "$MAIN_REPO" && git fetch origin
 
-    # Python projects
-    if [ -f "requirements.txt" ]; then
-      pip install -r requirements.txt
-    elif [ -f "pyproject.toml" ]; then
-      pip install -e .
-    fi
+    # Remove empty workspace dir, create worktree in its place
+    rmdir "$WORKSPACE"
+    git worktree add "$WORKSPACE" -b "$BRANCH" origin/main
 
-    # Rust projects
-    if [ -f "Cargo.toml" ]; then
-      cargo build
-    fi
+    cd "$WORKSPACE"
 
-    # Go projects
-    if [ -f "go.mod" ]; then
-      go mod download
+    # Install dependencies
+    if [ -f "bun.lockb" ]; then bun install
+    elif [ -f "pnpm-lock.yaml" ]; then pnpm install
+    elif [ -f "yarn.lock" ]; then yarn install
+    elif [ -f "package.json" ]; then npm install
     fi
   before_remove: |
-    # Cleanup hook - runs before workspace deletion
-    echo "Cleaning up workspace for mymind-clone-web"
+    MAIN_REPO="/Users/s3nik/Desktop/mymind-clone-web"
+    WORKSPACE="$(pwd)"
+    cd "$MAIN_REPO" 2>/dev/null && git worktree remove "$WORKSPACE" --force 2>/dev/null || true
+    git worktree prune 2>/dev/null || true
 agent:
   max_concurrent_agents: 2
   max_turns: 20
@@ -87,6 +77,13 @@ Description:
 {{ issue.description }}
 {% else %}
 No description provided.
+{% endif %}
+
+{% if has_visual_assets %}
+## Visual Context
+
+{{ visual_asset_count }} screenshot(s) attached. CRITICAL: analyze every image before writing code.
+Compare current UI against screenshots. These are your acceptance criteria.
 {% endif %}
 
 Instructions:
@@ -264,6 +261,51 @@ When a ticket reaches `Merging` state (human approved):
    - Delete the feature branch: `git push origin --delete <branch-name>`.
 3. Update the Linear issue to `Done` state.
 4. Add a final workpad note confirming merge SHA and branch cleanup.
+
+## Implementation Approach
+
+### Execution order
+1. Read attached screenshots — understand what's wrong
+2. Reproduce — start dev server, confirm the bug exists
+3. Find exact lines — smallest possible diff
+4. Implement — targeted changes, ordered by importance
+5. Test — dev server, curl endpoints, browser console
+6. Document — PROGRESS.md, LEARNING.md, README.md with screenshots
+
+### Commit convention (semantic release)
+Use conventional commits: `type(scope): description`
+- `fix(tags): resolve Instagram tag defaulting to placeholder values`
+- `feat(search): add semantic search with embeddings`
+- `style(tabs): update secondary highlight color on active tab`
+- `docs(progress): add CRE-6 resolution details`
+
+### Documentation per issue
+
+**PROGRESS.md** — append:
+```
+## {{ issue.identifier }}: {{ issue.title }}
+- Status: Completed
+- Files changed: (list with +/- counts)
+- Summary: (1-2 sentences)
+- Screenshot: ![](path/to/verification-screenshot.png)
+```
+
+**LEARNING.md** — append:
+```
+## {{ issue.identifier }}: {{ issue.title }}
+- Root cause: (what was actually wrong)
+- Fix pattern: (reusable for future issues)
+- Concepts: (specific technical concepts used)
+```
+
+**README.md** — add screenshot of the fixed feature/component under the relevant section.
+
+### Verification
+- Start dev server, visually verify
+- Test the user flow from the issue
+- Capture a screenshot of the fixed state
+- Check console for errors
+- Record evidence in Linear workpad
 
 ## Project-specific context
 
