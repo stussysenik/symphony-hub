@@ -1,5 +1,8 @@
 # Symphony Hub
 
+![Demo](demo.gif)
+
+
 > Central hub for monitoring and managing Symphony autonomous agents. Watch agents work in real-time with multi-pane dashboards, Linear integration, and detailed progress tracking.
 
 ## What Is This?
