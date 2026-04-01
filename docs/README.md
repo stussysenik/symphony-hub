@@ -73,3 +73,17 @@ Archive or supersede old paths instead of deleting them.
 - `symphony-hub`: canonical operator repo
 - `symphony-setup`: runtime evidence locker for preserved workspaces and logs
 - product repos: actual implementation targets
+
+## Code Location Model
+
+Use one code location per lifecycle stage:
+
+- `symphony-hub/workspaces/<project>/<ISSUE>`: current active generation
+- product repo `repo_root`: canonical landed code on `main`
+- `symphony-setup/workspaces/<project>/<ISSUE>`: preserved past generation or abandoned review candidate
+
+Review rule:
+
+- PR exists: review the PR and optionally verify in `symphony-hub/workspaces/...`
+- merged already: inspect the product repo root
+- no PR, old generation only: inspect `symphony-setup/...` with `./launch.sh recover`

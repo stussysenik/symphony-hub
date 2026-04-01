@@ -89,6 +89,29 @@ Agents create PRs automatically and move the Linear ticket to **Human Review**.
 - **Approve** → move ticket to `Merging`
 - **Request changes** → add review comments on the PR; the agent picks them up and pushes a new revision
 
+### Review Surfaces
+
+Keep these code locations distinct:
+
+- **Current active generation**: `~/Desktop/symphony-hub/workspaces/<project>/<ISSUE>`
+- **Canonical landed code**: the configured project `repo_root`, for example `~/Desktop/mymind-clone-web`
+- **Past unreviewed or abandoned generations**: `~/Desktop/symphony-setup/workspaces/<project>/<ISSUE>`
+
+Use them like this:
+
+- If a ticket has an active PR, review the PR first and use the current
+  `symphony-hub/workspaces/...` directory for local verification.
+- If the work is already merged, the canonical source is the product repo
+  `repo_root`.
+- If the ticket was archived or never reached a PR, inspect the preserved
+  generation in `symphony-setup/workspaces/...` with `./launch.sh recover`.
+
+This keeps review simple:
+- GitHub PR = review artifact
+- `symphony-hub/workspaces` = live execution artifact
+- product repo root = shipped code
+- `symphony-setup/workspaces` = legacy evidence artifact
+
 ### 4. Land
 
 Once you move the ticket to **Merging**, the agent automatically:
