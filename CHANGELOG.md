@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/stussysenik/symphony-hub/compare/v1.3.0...v1.4.0) (2026-04-01)
+
+### Features
+
+* **intake:** preserve managed refresh updates ([046fc87](https://github.com/stussysenik/symphony-hub/commit/046fc87d28f58fa75f9123f10cc99f1b7783fd65))
+
 ## [1.3.0](https://github.com/stussysenik/symphony-hub/compare/v1.2.0...v1.3.0) (2026-04-01)
 
 ### Features
