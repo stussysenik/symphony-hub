@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/stussysenik/symphony-hub/compare/v1.6.0...v1.6.1) (2026-04-01)
+
+### Bug Fixes
+
+* **issuefmt:** reduce formatting drift noise ([3de4b0a](https://github.com/stussysenik/symphony-hub/commit/3de4b0a8fbeac728a7582d50dd963163a635994b))
+
 ## [1.6.0](https://github.com/stussysenik/symphony-hub/compare/v1.5.0...v1.6.0) (2026-04-01)
 
 ### Features
