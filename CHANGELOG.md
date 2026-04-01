@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/stussysenik/symphony-hub/compare/v1.2.0...v1.3.0) (2026-04-01)
+
+### Features
+
+* **intake:** bound diagnosis-first issue compilation ([00bd721](https://github.com/stussysenik/symphony-hub/commit/00bd721d2670939198269c05b2cc30a40ec9c0da))
+
 ## [1.2.0](https://github.com/stussysenik/symphony-hub/compare/v1.1.1...v1.2.0) (2026-04-01)
 
 ### Features
