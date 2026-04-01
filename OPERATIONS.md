@@ -54,8 +54,14 @@ This is the repeatable loop you run for every batch of agent work.
 
 ```bash
 cd ~/Desktop/symphony-hub
+./launch.sh intake --project mymind-clone-web --prompt "Raw request here"   # Optional diagnosis-first Triage draft
 ./launch.sh start mymind-clone-web     # Start orchestrator + dashboard
 ```
+
+If you are starting from a raw request instead of a ready Linear issue, use
+`./launch.sh intake` first. It writes a local intake bundle, diagnoses the repo
+against current `origin/main`, calls out likely auth/restriction surfaces, and
+only creates a Linear issue if you pass `--apply`.
 
 ### 2. Monitor
 
@@ -67,6 +73,7 @@ Pick your preferred surface:
 | TUI terminal dashboard | `./launch.sh --tui` |
 | Startup or resume brief | `./launch.sh brief` |
 | Queue hygiene audit | `./launch.sh audit` |
+| Diagnosis-first intake draft | `./launch.sh intake --project mymind-clone-web --prompt "..."` |
 | Source topology | `./launch.sh sources` |
 | Save resumable checkpoint | `./launch.sh checkpoint pre-review` |
 | Tail logs | `tail -f ~/Desktop/open-ai-symphony/symphony/elixir/log/symphony.log` |
@@ -206,6 +213,37 @@ workspace path or issue history.
 If you need to inspect preserved legacy workspaces before deciding whether to
 revive or supersede a ticket, use `./launch.sh recover` against
 `symphony-setup/workspaces`.
+
+### Diagnosis-first intake
+
+When the work starts as a natural-language request instead of a clean issue,
+use:
+
+```bash
+cd ~/Desktop/symphony-hub
+./launch.sh intake --project mymind-clone-web --prompt "Raw task request"
+./launch.sh intake --project mymind-clone-web --prompt-file ./notes/task.md --apply
+```
+
+This is the right place for the system to be autonomous:
+
+- raw request in
+- repo diagnosis against current `origin/main`
+- code evidence and LOC out
+- auth / restriction hints out
+- structured `Triage` draft out
+
+This is intentionally not the execution trigger. `Todo` remains the execution
+gate after the issue body is tightened.
+
+If the issue already exists and you want to catch it up to the current repo
+state instead of creating a new one, target it directly:
+
+```bash
+./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording"
+```
+
+That updates the managed intake block but preserves the rest of the issue body.
 
 ### Changing spec mid-flight
 

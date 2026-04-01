@@ -8,7 +8,7 @@
 
 - [x] 2.1 Initialize OpenSpec in `symphony-hub` with Codex tooling.
 - [x] 2.2 Create the `reproducible-operator-foundation` proposal, design, specs, and tasks artifacts.
-- [ ] 2.3 Add follow-up change proposals for Linear board normalization and review gating.
+- [x] 2.3 Add follow-up change proposals for Linear board normalization and review gating.
 
 ## 3. Release Management
 

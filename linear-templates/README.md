@@ -14,9 +14,11 @@ Recommended template set:
 - [`feature-request.md`](feature-request.md)
 - [`tech-debt.md`](tech-debt.md)
 - [`research-spike.md`](research-spike.md)
+- [`agent-ready-project.md`](agent-ready-project.md)
 
 For Symphony-driven teams:
 
 - default new intake to `Triage`
 - use `Todo` as the execution trigger
 - keep labels minimal and consistent
+- use `agent-ready-project.md` when you want the Linear issue itself to be the full execution spec

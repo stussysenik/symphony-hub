@@ -43,6 +43,9 @@ Those commands are the shortest path to:
 - [proposal.md](../openspec/changes/reproducible-operator-foundation/proposal.md): current operator-foundation change proposal
 - [design.md](../openspec/changes/reproducible-operator-foundation/design.md): design for the operator foundation
 - [tasks.md](../openspec/changes/reproducible-operator-foundation/tasks.md): implementation checklist
+- [proposal.md](../openspec/changes/diagnosis-first-linear-intake/proposal.md): diagnosis-first intake proposal
+- [design.md](../openspec/changes/diagnosis-first-linear-intake/design.md): intake architecture and guardrails
+- [tasks.md](../openspec/changes/diagnosis-first-linear-intake/tasks.md): intake implementation checklist
 
 ## Release And Delivery
 
@@ -54,6 +57,8 @@ Those commands are the shortest path to:
 ## Hygiene Helpers
 
 - `./launch.sh audit`: queue hygiene snapshot
+- `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
+- `./launch.sh intake --project <name> --issue <ID> --prompt "..."`: refresh the managed diagnosis block on an existing issue
 - `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
 - `./launch.sh recover --project <name> --root /Users/s3nik/Desktop/symphony-setup/workspaces`: inspect preserved workspaces before revive/archive decisions
 

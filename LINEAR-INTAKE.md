@@ -131,6 +131,45 @@ The script uses Linear's supported create-issue URLs and lets you pre-fill:
 - project
 - template UUID
 
+### Diagnosis-first intake
+
+Use [`linear-intake.sh`](linear-intake.sh) when you only have a raw prompt and
+want the hub to draft a better `Triage` issue first:
+
+```bash
+./launch.sh intake --project mymind-clone-web \
+  --prompt "Polish the search shell focus state and make sure protected flows still read clearly"
+```
+
+What it does:
+
+- fetches current `origin/<default_branch>` for the configured repo
+- records repo dirty/ahead/behind state
+- gathers code hits with file paths, line numbers, and LOC
+- scans for likely auth / restriction surfaces
+- stamps the draft with the project's configured writable paths, restricted paths, and required checks
+- checks for related Linear issues in the same project
+- writes a local report bundle under `intakes/`
+- creates the Linear issue only if you pass `--apply`
+- resolves `Triage` to `Backlog` automatically if the team does not expose a `Triage` state
+
+Use this for `Triage` intake. Do not treat it as a replacement for tightening
+the issue before `Todo`.
+
+If you already have an issue but want to refresh it against the current repo
+state, use:
+
+```bash
+./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording"
+```
+
+That refreshes the managed intake diagnosis block without deleting the
+human-authored parts of the issue description.
+
+If the requested state does not exist on the team yet, the command prints the
+resolved fallback state. In the current board shape, asking for `Triage` may
+resolve to `Backlog` until Triage is enabled in Linear.
+
 ## Acceptance Bar for "Agent-Ready"
 
 Move an intake issue from `Triage` to `Todo` only when:

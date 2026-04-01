@@ -175,6 +175,42 @@ symphony/elixir/lib/symphony_elixir/
                Human reviews + merges
 ```
 
+### Intake: Raw Prompt to Triage Draft
+
+```
+                Raw NLP Request
+                       │
+                       ▼
+               ┌─────────────┐
+               │ launch intake│
+               └──────┬──────┘
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Repo Diagnose│─── fetch origin/main
+               └──────┬──────┘    ahead/behind + dirty state
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Evidence Scan │─── rg keyword hits + LOC
+               └──────┬──────┘    auth / restriction signals
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Linear Context│─── states, labels, nearby issues
+               └──────┬──────┘
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Draft Bundle │─── request.txt / diagnosis.json / draft.md
+               └──────┬──────┘
+                      │
+                --apply / --issue gate
+                      │
+                      ▼
+            Linear Triage or issue refresh
+```
+
 ### Vision: Asset Collection and Multimodal Input
 
 ```

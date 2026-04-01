@@ -262,6 +262,11 @@ cmd_audit() {
     exec "${SCRIPT_DIR}/linear-audit.sh" "$@"
 }
 
+cmd_intake() {
+    load_env_if_present
+    exec "${SCRIPT_DIR}/linear-intake.sh" "$@"
+}
+
 cmd_sources() {
     echo -e "${BLUE}[symphony]${NC} Source Topology"
     echo
@@ -476,6 +481,7 @@ Commands:
   status             Show status of all instances
   logs <project>     Tail logs for a project
   audit [options]    Audit Linear issue hygiene across configured projects
+  intake [options]   Draft a diagnosis-backed Linear intake issue from a raw prompt
   recover [options]  Inspect preserved workspaces for recovery decisions
   sources            Show hub/engine/project topology
   brief [options]    Print the operator startup/resume summary
@@ -499,6 +505,7 @@ Examples:
   ./launch.sh status             # Show status of all instances
   ./launch.sh logs v0-ipod       # Tail logs for v0-ipod
   ./launch.sh audit              # Review queue hygiene across projects
+  ./launch.sh intake --project mymind-clone-web --prompt "Polish search shell focus state"
   ./launch.sh recover --project mymind-clone-web
   ./launch.sh sources            # Print hub/engine/project topology
   ./launch.sh brief              # Print the startup/resume summary
@@ -550,6 +557,9 @@ main() {
             ;;
         audit)
             cmd_audit "$@"
+            ;;
+        intake)
+            cmd_intake "$@"
             ;;
         recover)
             cmd_recover "$@"

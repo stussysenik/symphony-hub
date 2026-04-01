@@ -229,6 +229,29 @@ matters at scale.
 
 ---
 
+## Decision 10: Diagnose Before You Create Execution Work
+
+**Chose:** diagnosis-first intake for raw requests
+**Over:** creating bare Linear tickets from vague prompts and cleaning them up later
+
+**Why:**
+
+- **Raw prompts are cheap, execution mistakes are expensive** — The system
+  should spend effort before `Todo`, not after a bad run starts.
+- **Repo state matters** — A request can already be obsolete, partially
+  implemented, or blocked by drift from `origin/main`. Intake should see that.
+- **Restrictions are part of the spec** — If a task touches auth, protected
+  routes, or permission logic, those boundaries belong in the issue before an
+  agent starts coding.
+- **Persistence reduces re-generation waste** — An intake bundle gives the
+  operator durable evidence instead of forcing another round of prompt
+  rewriting.
+
+**Design rule:** use autonomous help to create better `Triage` issues, not to
+silently bypass the `Todo` quality gate.
+
+---
+
 ## Decision Summary
 
 | Decision | Chose | Key Reason |

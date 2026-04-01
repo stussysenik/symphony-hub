@@ -8,6 +8,7 @@
 logs/
 pids/
 checkpoints/
+intakes/
 *.pid
 *.log
 

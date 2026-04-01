@@ -40,6 +40,27 @@ projects:
     max_agents: 2
     default_branch: "main"
     workspace_strategy: "worktree"
+    intake:
+      team_key: "CRE"
+      default_state: "Triage"
+      writable_paths:
+        - app
+        - components
+        - lib
+        - public
+        - scripts
+      restricted_paths:
+        - .git
+        - node_modules
+        - .next
+        - dist
+        - coverage
+      required_checks:
+        - npm run validate
+        - npm run test
+      notes:
+        - Keep the work local to the iPod product surface unless the issue explicitly broadens scope.
+        - Avoid generated build output and dependency directories.
     assets:
       collect_attachments: true
       scan_project_dirs: true
@@ -60,6 +81,31 @@ projects:
     default_branch: "main"
     workspace_strategy: "worktree"
     workflow_appendix: "workflow-instructions/mymind-clone-web.md"
+    intake:
+      team_key: "CRE"
+      default_state: "Triage"
+      writable_paths:
+        - apps
+        - packages
+        - extension
+        - extension-firefox
+        - docs/features
+        - dspy-service
+        - experiments
+      restricted_paths:
+        - .git
+        - node_modules
+        - .next
+        - dist
+        - coverage
+        - .turbo
+      required_checks:
+        - bun run lint
+        - bun run test
+        - bun run check-secrets
+      notes:
+        - Prefer the narrowest app or package surface possible; do not treat the whole monorepo as fair game.
+        - Avoid generated build output, runtime state, and archived evidence unless the issue explicitly targets them.
     assets:
       collect_attachments: true
       scan_project_dirs: true
@@ -79,6 +125,18 @@ projects:
     max_agents: 2
     default_branch: "main"
     workspace_strategy: "worktree"
+    intake:
+      team_key: "CRE"
+      default_state: "Triage"
+      writable_paths:
+        - docs
+      restricted_paths:
+        - .git
+        - node_modules
+        - dist
+      required_checks: []
+      notes:
+        - This repo is currently documentation-heavy; broaden scope only after the code surface exists.
     assets:
       collect_attachments: true
       scan_project_dirs: true

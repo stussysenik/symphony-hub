@@ -40,6 +40,7 @@ These are **new scripts** created specifically for this demo:
 | `watch-events.sh` | ⚡ Event highlighter for logs |
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
+| `linear-intake.sh` | 📝 Draft a structured Linear intake issue from a raw prompt |
 | `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
 | `workspace-recovery.sh` | 🧰 Inspect preserved workspaces before revive/archive decisions |
 | `checkpoint.sh` | 💾 Local checkpoint snapshot for resumable handoffs |
@@ -159,6 +160,7 @@ Use `symphony-hub` as the operator home going forward.
 
 ```bash
 ./launch.sh brief
+./launch.sh intake --project mymind-clone-web --prompt "Polish search shell focus state across desktop and mobile"
 ./launch.sh start mymind-clone-web
 ```
 
@@ -179,6 +181,9 @@ Symphony watches your Linear project for new issues. To start an agent:
 
 1. **Capture the issue in Linear**
    - Recommended: create it in `Triage` from a template and let Linear help route it
+   - Faster intake path: use `./launch.sh intake --project ... --prompt "..."` to draft a `Triage` issue from a raw request plus repo diagnosis
+   - Refresh path: use `./launch.sh intake --project ... --issue CRE-123 --prompt "..."` to update an existing issue's diagnosis block
+   - If the team does not expose `Triage`, the intake helper falls back to `Backlog` instead of creating executable work
    - Fast path: create it directly in `Todo` if it is already implementation-ready
 2. **Move the issue to `Todo`** when you want Symphony to pick it up
 3. **Symphony detects it** (polls every few seconds)
@@ -217,6 +222,7 @@ Use monitoring scripts to watch in real-time:
 ./launch.sh brief                # Startup/resume summary
 ./watch-linear.sh CRE-5          # Watch specific Linear issue
 ./linear-audit.sh                # Audit queues, stale issues, and review gaps
+./launch.sh intake --project mymind-clone-web --prompt "Investigate search shell focus polish"
 ./linear-archive.sh --issue CRE-8 --workspace-root /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
 ./workspace-recovery.sh --project mymind-clone-web --root /Users/s3nik/Desktop/symphony-setup/workspaces
 ./launch.sh sources              # Print hub/engine/project topology
