@@ -33,7 +33,13 @@ created as a Linear issue.
 #### Scenario: Operator opts in to creation
 - **WHEN** the intake command runs with `--apply`
 - **THEN** it creates the issue in the requested state, defaulting to
-  `Triage`.
+  `Triage`, or `Backlog` when the team does not expose `Triage`.
+
+#### Scenario: Operator targets an existing issue without apply
+- **WHEN** the operator runs the intake command with `--issue CRE-123` and
+  omits `--apply`
+- **THEN** the system does not mutate the Linear issue and only renders the
+  preview plus local report bundle.
 
 ### Requirement: Existing issues can be refreshed safely
 
@@ -41,6 +47,21 @@ The system SHALL support refreshing repo diagnosis on an existing issue without
 overwriting the human-authored portions of the description.
 
 #### Scenario: Operator refreshes an issue
-- **WHEN** the operator runs the intake command with `--issue CRE-123`
+- **WHEN** the operator runs the intake command with `--issue CRE-123 --apply`
 - **THEN** the system updates or appends a managed diagnosis block and preserves
   the rest of the issue description.
+
+#### Scenario: Operator refreshes an empty issue description
+- **WHEN** the operator runs the intake command with `--issue CRE-123 --apply`
+  and the existing issue description is empty
+- **THEN** the system falls back to rendering the full structured draft body.
+
+### Requirement: Intake compilation remains bounded
+
+The system SHALL keep the intake compile path bounded so it does not hang the
+operator loop.
+
+#### Scenario: Richer compile does not complete in time
+- **WHEN** the richer intake compile path times out or returns incomplete data
+- **THEN** the system falls back to a deterministic diagnosis-backed draft and
+  still writes the local report bundle.

@@ -58,7 +58,8 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
-- `./launch.sh intake --project <name> --issue <ID> --prompt "..."`: refresh the managed diagnosis block on an existing issue
+- `./launch.sh intake --project <name> --issue <ID> --prompt "..."`: preview a targeted existing-issue refresh
+- `./launch.sh intake --project <name> --issue <ID> --prompt "..." --apply`: refresh the managed diagnosis block on an existing issue
 - `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
 - `./launch.sh recover --project <name> --root /Users/s3nik/Desktop/symphony-setup/workspaces`: inspect preserved workspaces before revive/archive decisions
 

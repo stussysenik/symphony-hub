@@ -16,9 +16,10 @@
 ## 3. Guardrails
 
 - [x] 3.1 Keep dry-run as the default behavior.
-- [x] 3.2 Require explicit `--apply` for issue creation and an explicit `--issue` target for refresh.
+- [x] 3.2 Require explicit `--apply` for any issue creation or refresh mutation and an explicit `--issue` target for refresh.
 - [x] 3.3 Default created issues to `Triage` unless the operator overrides it.
-- [x] 3.4 Keep repo sync optional via an explicit flag.
+- [x] 3.4 Keep remote fetch skippable via `--no-fetch`.
+- [x] 3.5 Keep the richer compile path bounded and fall back deterministically when it does not complete in time.
 
 ## 4. Docs
 

@@ -182,7 +182,7 @@ Symphony watches your Linear project for new issues. To start an agent:
 1. **Capture the issue in Linear**
    - Recommended: create it in `Triage` from a template and let Linear help route it
    - Faster intake path: use `./launch.sh intake --project ... --prompt "..."` to draft a `Triage` issue from a raw request plus repo diagnosis
-   - Refresh path: use `./launch.sh intake --project ... --issue CRE-123 --prompt "..."` to update an existing issue's diagnosis block
+   - Refresh path: use `./launch.sh intake --project ... --issue CRE-123 --prompt "..."` to preview an existing issue refresh, then add `--apply` to update its diagnosis block
    - If the team does not expose `Triage`, the intake helper falls back to `Backlog` instead of creating executable work
    - Fast path: create it directly in `Todo` if it is already implementation-ready
 2. **Move the issue to `Todo`** when you want Symphony to pick it up

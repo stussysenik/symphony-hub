@@ -40,6 +40,8 @@ DEFAULT_CONTEXT_ISSUES = 12
 DEFAULT_CREATE_STATE = "Triage"
 DEFAULT_CODEX_MODEL = "gpt-5.4-mini"
 DEFAULT_CODEX_TIMEOUT_SECONDS = 20
+MANAGED_BLOCK_START = "<!-- symphony:intake:start -->"
+MANAGED_BLOCK_END = "<!-- symphony:intake:end -->"
 STOPWORDS = {
     "about", "after", "again", "against", "agent", "agents", "also", "always",
     "and", "another", "around", "because", "before", "being", "board", "both",
@@ -50,6 +52,7 @@ STOPWORDS = {
     "should", "start", "still", "such", "that", "them", "there", "these", "they",
     "thing", "this", "those", "through", "todo", "want", "were", "what", "when",
     "with", "work", "would", "write", "your", "the", "desktop", "mobile", "state", "read",
+    "current", "stale", "refresh", "explicit", "guardrails", "updated", "wording",
 }
 EXCLUDED_GLOBS = [
     "!node_modules/**",
@@ -876,7 +879,7 @@ def render_location_items(items: list[dict]) -> list[str]:
     return lines or ["- No concrete code locations were identified. Keep this issue in `Triage` until the surface is clearer."]
 
 
-def render_description(*, task: str, project: dict, diagnosis: dict, evidence: list[dict], auth_signals: list[dict], compiled: dict, related_issues: list[dict], report_dir: Path, existing_issue: dict | None, requested_state: str) -> str:
+def build_managed_block(*, task: str, project: dict, diagnosis: dict, evidence: list[dict], auth_signals: list[dict], compiled: dict, related_issues: list[dict], report_dir: Path, existing_issue: dict | None, requested_state: str) -> str:
     compiled_related = compiled.get("related_issues") or []
     related_lines = [f"- `{item['identifier']}`: {item['reason']}" for item in compiled_related] or format_related_lines(related_issues)
     authorizations = unique_items(
@@ -898,6 +901,7 @@ def render_description(*, task: str, project: dict, diagnosis: dict, evidence: l
     )
 
     sections = [
+        MANAGED_BLOCK_START,
         "## Source Task",
         quote_block(task),
         "",
@@ -925,9 +929,25 @@ def render_description(*, task: str, project: dict, diagnosis: dict, evidence: l
         "## Authorization / Restriction Evidence",
         *format_hit_lines(auth_signals, include_category=True),
         "",
+        "## Likely Code Locations (LOC)",
+        *render_location_items(compiled.get("likely_code_locations", [])),
+        "",
         "## Related Linear Context",
         *related_lines,
         "",
+        "## Execution Guardrails",
+        "### Authorizations",
+        *render_bullet_items(authorizations),
+        "",
+        "### Restrictions",
+        *render_bullet_items(restrictions),
+        MANAGED_BLOCK_END,
+    ]
+    return "\n".join(sections).rstrip() + "\n"
+
+
+def render_spec_sections(*, task: str, compiled: dict, report_dir: Path) -> str:
+    sections = [
         "## Context",
         compiled["context"].strip(),
         "",
@@ -958,20 +978,42 @@ def render_description(*, task: str, project: dict, diagnosis: dict, evidence: l
         "## Non-Goals",
         *render_bullet_items(compiled.get("non_goals", []), empty_fallback="No explicit non-goals were captured yet."),
         "",
-        "## Likely Code Locations (LOC)",
-        *render_location_items(compiled.get("likely_code_locations", [])),
-        "",
-        "## Execution Guardrails",
-        "### Authorizations",
-        *render_bullet_items(authorizations),
-        "",
-        "### Restrictions",
-        *render_bullet_items(restrictions),
-        "",
         "## Open Questions",
         *render_bullet_items(compiled.get("open_questions", []), empty_fallback="None. Review and move to `Todo` only when the operator agrees."),
     ]
     return "\n".join(sections).rstrip() + "\n"
+
+
+def render_description(*, task: str, project: dict, diagnosis: dict, evidence: list[dict], auth_signals: list[dict], compiled: dict, related_issues: list[dict], report_dir: Path, existing_issue: dict | None, requested_state: str) -> str:
+    managed_block = build_managed_block(
+        task=task,
+        project=project,
+        diagnosis=diagnosis,
+        evidence=evidence,
+        auth_signals=auth_signals,
+        compiled=compiled,
+        related_issues=related_issues,
+        report_dir=report_dir,
+        existing_issue=existing_issue,
+        requested_state=requested_state,
+    )
+    spec_sections = render_spec_sections(task=task, compiled=compiled, report_dir=report_dir)
+    return "\n".join([managed_block.rstrip(), "", spec_sections.rstrip()]).rstrip() + "\n"
+
+
+def upsert_managed_block(existing_description: str, managed_block: str) -> str:
+    body = existing_description or ""
+    pattern = re.compile(
+        re.escape(MANAGED_BLOCK_START) + r".*?" + re.escape(MANAGED_BLOCK_END),
+        re.DOTALL,
+    )
+    if pattern.search(body):
+        updated = pattern.sub(managed_block.rstrip(), body, count=1)
+    elif body.strip():
+        updated = managed_block.rstrip() + "\n\n" + body.strip() + "\n"
+    else:
+        updated = managed_block
+    return updated.rstrip() + "\n"
 
 
 def write_report_bundle(report_root: Path, slug: str, payload: dict, draft: str, task: str, compiled: dict) -> Path:
@@ -1033,8 +1075,10 @@ def create_issue(project_context: dict, title: str, description: str, requested_
     return created["issue"], missing_labels, resolved_state
 
 
-def update_issue(issue: dict, title: str, description: str, requested_labels: list[str], project_context: dict | None, requested_state: str | None, apply_state: bool) -> tuple[dict, list[str], str]:
-    input_payload = {"title": title, "description": description}
+def update_issue(issue: dict, title: str | None, description: str, requested_labels: list[str], project_context: dict | None, requested_state: str | None, apply_state: bool) -> tuple[dict, list[str], str]:
+    input_payload = {"description": description}
+    if title is not None:
+        input_payload["title"] = title
     missing_labels = []
     resolved_state = issue["state"]["name"]
     if project_context and requested_labels:
@@ -1092,8 +1136,17 @@ def main() -> int:
     if existing_issue and linear_context and existing_issue.get("project", {}).get("id") != linear_context["id"]:
         raise SystemExit(f"{args.issue} does not belong to configured project '{args.project}'.")
 
-    title_seed = (args.title or derive_title(project["name"], task)).strip()
-    keywords = extract_keywords(f"{title_seed}\n{task}")
+    title_seed = (args.title or (existing_issue or {}).get("title") or derive_title(project["name"], task)).strip()
+    keyword_source = "\n".join(
+        item
+        for item in [
+            title_seed,
+            task,
+            (existing_issue or {}).get("title", ""),
+        ]
+        if item
+    )
+    keywords = extract_keywords(keyword_source)
     diagnosis = collect_git_diagnosis(repo_root, default_branch, fetch=not args.no_fetch)
     evidence = collect_code_evidence(repo_root, search_roots, excluded_globs, keywords, args.evidence_limit)
     auth_signals = collect_auth_signals(repo_root, search_roots, excluded_globs, args.auth_limit)
@@ -1126,7 +1179,7 @@ def main() -> int:
         compiled = fallback_compile(task, title_seed, evidence, related, existing_issue)
         compile_mode = "fallback"
 
-    resolved_title = (args.title or compiled.get("title") or title_seed).strip()
+    resolved_title = (args.title or (existing_issue or {}).get("title") or compiled.get("title") or title_seed).strip()
     report_payload = {
         "project": {
             "name": project["name"],
@@ -1149,7 +1202,7 @@ def main() -> int:
     report_root = Path(args.report_root).expanduser()
     report_slug = slugify(f"{project['name']}-{resolved_title}")[:80]
     placeholder_dir = report_root / "pending"
-    placeholder_draft = render_description(
+    placeholder_full_draft = render_description(
         task=task,
         project=project,
         diagnosis=diagnosis,
@@ -1161,8 +1214,8 @@ def main() -> int:
         existing_issue=existing_issue,
         requested_state=args.status,
     )
-    report_dir = write_report_bundle(report_root, report_slug, report_payload, placeholder_draft, task, compiled)
-    draft = render_description(
+    report_dir = write_report_bundle(report_root, report_slug, report_payload, placeholder_full_draft, task, compiled)
+    full_draft = render_description(
         task=task,
         project=project,
         diagnosis=diagnosis,
@@ -1174,6 +1227,22 @@ def main() -> int:
         existing_issue=existing_issue,
         requested_state=args.status,
     )
+    managed_block = build_managed_block(
+        task=task,
+        project=project,
+        diagnosis=diagnosis,
+        evidence=evidence,
+        auth_signals=auth_signals,
+        compiled=compiled,
+        related_issues=related,
+        report_dir=report_dir,
+        existing_issue=existing_issue,
+        requested_state=args.status,
+    )
+    if existing_issue and (existing_issue.get("description") or "").strip():
+        draft = upsert_managed_block(existing_issue.get("description") or "", managed_block)
+    else:
+        draft = full_draft
     (report_dir / "draft.md").write_text(draft, encoding="utf-8")
 
     created_issue = None
@@ -1188,7 +1257,7 @@ def main() -> int:
             target_state = args.status if args.apply_state else existing_issue["state"]["name"]
             created_issue, missing_labels, applied_state = update_issue(
                 issue=existing_issue,
-                title=resolved_title,
+                title=args.title.strip() if args.title else None,
                 description=draft,
                 requested_labels=requested_labels,
                 project_context=linear_context,

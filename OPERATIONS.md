@@ -245,9 +245,14 @@ state instead of creating a new one, target it directly:
 
 ```bash
 ./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording"
+./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording" --apply
 ```
 
-That updates the managed intake block but preserves the rest of the issue body.
+The first command previews the targeted refresh. Adding `--apply` updates the
+managed intake block while preserving the rest of the issue body.
+
+If the target issue body is empty, intake falls back to the full structured
+draft. Existing titles stay in place unless you pass `--title`.
 
 ### Changing spec mid-flight
 

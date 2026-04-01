@@ -7,11 +7,13 @@ The intake flow should be composable and diagnosis-first:
    user's working state.
 3. Diagnose repo state and gather code evidence.
 4. Query Linear for project metadata and nearby issues.
-5. Render a structured issue draft suitable for `Triage`.
+5. Attempt a richer structured issue compile within a bounded operator-safe
+   timeout and fall back to a deterministic diagnosis draft if it does not
+   complete.
 6. Persist the artifacts locally.
-7. Create the Linear issue only when `--apply` is passed.
-8. Refresh the managed diagnosis block on an existing issue when `--issue` is
-   passed.
+7. Create or update the Linear issue only when `--apply` is passed.
+8. Select an existing issue with `--issue` when the operator wants to refresh
+   its managed diagnosis block.
 
 ## Components
 
@@ -76,12 +78,18 @@ The rendered issue body must include:
 
 The draft is intentionally biased toward `Triage`, not immediate execution.
 
+The compiler path should prefer a richer Codex-backed draft, but that path must
+be bounded so it cannot hang the operator loop. If the richer compile times
+out or returns incomplete data, the intake command falls back to a deterministic
+draft built from the diagnosis and evidence payload.
+
 ### 5. Persistence
 
 Each run writes a local report bundle:
 
 - `request.txt`
 - `diagnosis.json`
+- `compiled.json`
 - `draft.md`
 - `linear-response.json` when created
 
@@ -89,21 +97,28 @@ This prevents wasted regenerations and makes intake itself resumable.
 
 ### 6. Safe Refresh Of Existing Issues
 
-When the operator targets `--issue CRE-123`, the command updates only a managed
-intake block if the issue already has human-written description content.
+When the operator targets `--issue CRE-123`, the command prepares a refresh for
+that issue in dry-run mode by default.
+
+When the operator adds `--apply`, the command updates only a managed intake
+block if the issue already has human-written description content.
 
 If the issue description is empty, the command falls back to a full structured
 draft body.
+
+The managed intake block is identified by stable start/end markers so refreshes
+replace or prepend only the machine-owned section.
 
 ## Guardrails
 
 - default mode is dry-run
 - default state is `Triage`
 - project policy controls the default writable/restricted surface
-- issue creation is explicit via `--apply`
-- issue refresh is explicit via `--issue`
-- if the requested state does not exist on the team, the command fails instead
-  of silently creating executable work in the wrong state
+- issue creation or refresh mutation is explicit via `--apply`
+- existing-issue targeting is explicit via `--issue`
+- if `Triage` does not exist on the team, the command resolves that request to
+  `Backlog`; other unknown states still fail instead of silently creating
+  executable work in the wrong state
 
 ## Non-Goals
 

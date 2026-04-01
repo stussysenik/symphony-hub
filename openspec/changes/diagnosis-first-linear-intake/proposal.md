@@ -12,7 +12,7 @@ We need a diagnosis-first intake path that:
 - gathers concrete code-location evidence
 - calls out likely authorization and restriction surfaces
 - persists the intake artifact locally so operators do not lose context
-- creates a Linear issue only through an explicit `--apply` gate
+- creates or updates a Linear issue only through an explicit `--apply` gate
 
 This keeps the board calm while still making the system feel lightweight and
 composable.
@@ -27,6 +27,8 @@ composable.
   - related Linear issue hints
   - authorization / restriction signals
   - project-specific writable/restricted path policy from `projects.yml`
+  - a bounded richer compile attempt with deterministic fallback when that
+    compile does not finish in time
   - a structured issue body intended for `Triage` by default
 - Persist intake runs under a local git-ignored report root.
 - Allow refreshing an existing issue's managed intake block without deleting the

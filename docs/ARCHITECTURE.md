@@ -202,10 +202,15 @@ symphony/elixir/lib/symphony_elixir/
                       │
                       ▼
                ┌─────────────┐
-               │ Draft Bundle │─── request.txt / diagnosis.json / draft.md
+               │ Bound Compile│─── richer Codex draft
+               └──────┬──────┘    deterministic fallback if incomplete/slow
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Draft Bundle │─── request.txt / diagnosis.json / compiled.json / draft.md
                └──────┬──────┘
                       │
-                --apply / --issue gate
+              --issue target + --apply mutate gate
                       │
                       ▼
             Linear Triage or issue refresh
