@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/stussysenik/symphony-hub/compare/v1.5.0...v1.6.0) (2026-04-01)
+
+### Features
+
+* **issuefmt:** enforce canonical linear issue signature ([1ac843c](https://github.com/stussysenik/symphony-hub/commit/1ac843c51a73415211bfe513c6a4419d40e50e30))
+
 ## [1.5.0](https://github.com/stussysenik/symphony-hub/compare/v1.4.0...v1.5.0) (2026-04-01)
 
 ### Features
