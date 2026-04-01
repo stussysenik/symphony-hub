@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # watch-events.sh - Highlight interesting Symphony events
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
 PROJECT=${1:-v0-ipod}
-LOG_FILE="logs/${PROJECT}.log"
+LOGS_ROOT="$(symphony_config_get "logs_root")"
+LOG_FILE="${LOGS_ROOT}/${PROJECT}.log"
 
 if [ ! -f "$LOG_FILE" ]; then
     echo "❌ Log file not found: $LOG_FILE"

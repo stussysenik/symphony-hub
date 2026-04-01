@@ -1,26 +1,37 @@
 #!/usr/bin/env bash
-# watch-linear.sh - Monitor Linear issue status
+# watch-linear.sh - Monitor a single Linear issue.
 
-ISSUE_ID=$1
+set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/.env.local"
+ISSUE_ID="${1:-}"
 
-if [ -z "$ISSUE_ID" ]; then
-    echo "Usage: $0 <issue-id>"
+if [ -z "${ISSUE_ID}" ]; then
+    echo "Usage: $0 <issue-id>" >&2
     exit 1
 fi
 
-# Extract API key from .env.local
-LINEAR_API_KEY=$(grep LINEAR_API_KEY "$SCRIPT_DIR/.env.local" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+if [ -f "${ENV_FILE}" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${ENV_FILE}"
+    set +a
+fi
 
-if [ -z "$LINEAR_API_KEY" ]; then
-    echo "❌ Error: LINEAR_API_KEY not found in .env.local"
+if [ -z "${LINEAR_API_KEY:-}" ]; then
+    echo "Error: LINEAR_API_KEY not found in ${ENV_FILE}" >&2
     exit 1
 fi
 
-# Simple GraphQL query - search all issues and filter client-side
-# This is more reliable than complex filters
-QUERY='query {
-  issues(first: 250) {
+QUERY='query($teamKey: String!, $issueNumber: Float!) {
+  issues(
+    first: 1
+    filter: {
+      team: { key: { eq: $teamKey } }
+      number: { eq: $issueNumber }
+    }
+  ) {
     nodes {
       identifier
       title
@@ -29,7 +40,7 @@ QUERY='query {
       assignee { name }
       labels { nodes { name } }
       attachments { nodes { url title } }
-      comments(first: 10) {
+      comments(first: 20) {
         nodes {
           body
           createdAt
@@ -39,125 +50,111 @@ QUERY='query {
   }
 }'
 
-# Query Linear API
-RESPONSE=$(curl -s -H "Authorization: ${LINEAR_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\": $(printf '%s' "$QUERY" | python3 -c 'import json, sys; print(json.dumps(sys.stdin.read()))')}" \
-  https://api.linear.app/graphql)
-
-# Parse and display with Python
-export RESPONSE
-export ISSUE_ID
-python3 << 'PYSCRIPT'
-import sys
+PAYLOAD=$(QUERY="${QUERY}" ISSUE_ID="${ISSUE_ID}" python3 <<'PYSCRIPT'
 import json
 import os
+
+issue_id = os.environ["ISSUE_ID"]
+team_key, issue_number = issue_id.rsplit("-", 1)
+
+print(json.dumps({
+    "query": os.environ["QUERY"],
+    "variables": {
+        "teamKey": team_key,
+        "issueNumber": int(issue_number),
+    },
+}))
+PYSCRIPT
+)
+
+RESPONSE=$(curl -fsS -H "Authorization: ${LINEAR_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "${PAYLOAD}" \
+  https://api.linear.app/graphql)
+
+export RESPONSE ISSUE_ID
+python3 << 'PYSCRIPT'
+import json
+import os
+import sys
 from datetime import datetime
 
-response_text = os.environ.get('RESPONSE', '{}')
-target_issue_id = os.environ.get('ISSUE_ID', '')
+response_text = os.environ.get("RESPONSE", "{}")
+target_issue_id = os.environ.get("ISSUE_ID", "")
 
 try:
     data = json.loads(response_text)
 except json.JSONDecodeError:
-    print("❌ Error: Failed to parse Linear API response")
+    print("Error: failed to parse Linear API response")
     sys.exit(1)
 
-if 'errors' in data:
-    print("❌ Error:", data['errors'][0]['message'])
+if data.get("errors"):
+    print("Error:", data["errors"][0]["message"])
     sys.exit(1)
 
-all_issues = data.get('data', {}).get('issues', {}).get('nodes', [])
-
-# Find the target issue by identifier
-issue = None
-for i in all_issues:
-    if i.get('identifier') == target_issue_id:
-        issue = i
-        break
+all_issues = data.get("data", {}).get("issues", {}).get("nodes", [])
+issue = all_issues[0] if all_issues else None
 
 if not issue:
-    print(f"❌ Issue '{target_issue_id}' not found")
-    print(f"   (searched {len(all_issues)} recent issues)")
+    print(f"Issue '{target_issue_id}' not found")
     sys.exit(1)
 
-# Header
 print("═" * 60)
-print(f"🎫 Issue: {issue.get('identifier', 'N/A')} - {issue.get('title', 'N/A')}")
+print(f"Issue: {issue.get('identifier', 'N/A')} - {issue.get('title', 'N/A')}")
 print("═" * 60)
 print()
 
-# State (with emoji)
-state = issue.get('state', {}).get('name', 'Unknown')
-state_emoji = {
-    'Triage': '🧭',
-    'Todo': '⏸️ ',
-    'In Progress': '⚡',
-    'Human Review': '👀',
-    'Merging': '🔀',
-    'Done': '✅',
-    'Rework': '🔄',
-    'Backlog': '📋',
-    'Canceled': '❌',
-    'Cancelled': '❌'
-}.get(state, '📋')
-print(f"{state_emoji}  State: {state}")
+state = issue.get("state", {}).get("name", "Unknown")
+print(f"State: {state}")
 
-# Assignee
-assignee = issue.get('assignee')
+assignee = issue.get("assignee")
 if assignee:
-    print(f"👤 Assignee: {assignee.get('name', 'Unassigned')}")
+    print(f"Assignee: {assignee.get('name', 'Unassigned')}")
 
-# Labels
-labels = issue.get('labels', {}).get('nodes', [])
+labels = issue.get("labels", {}).get("nodes", [])
 if labels:
-    label_names = ', '.join([l['name'] for l in labels])
-    print(f"🏷️  Labels: {label_names}")
+    print(f"Labels: {', '.join(label['name'] for label in labels)}")
 
-# URL
-print(f"🔗 URL: {issue.get('url', 'N/A')}")
+print(f"URL: {issue.get('url', 'N/A')}")
 print()
 
-# Attachments (PRs)
-attachments = issue.get('attachments', {}).get('nodes', [])
+attachments = issue.get("attachments", {}).get("nodes", [])
 if attachments:
-    print("📎 Attachments:")
+    print("Attachments:")
     for att in attachments:
-        print(f"  • {att.get('title', 'Unnamed')}")
+        print(f"  - {att.get('title', 'Unnamed')}")
         print(f"    {att.get('url', '')}")
     print()
 
-# Find workpad comments (comments containing "Codex Workpad")
-comments = issue.get('comments', {}).get('nodes', [])
-workpad_comments = [c for c in comments if 'Codex Workpad' in c.get('body', '') or 'codex workpad' in c.get('body', '').lower()]
+comments = issue.get("comments", {}).get("nodes", [])
+workpad_comments = [c for c in comments if "codex workpad" in (c.get("body") or "").lower()]
 
 if workpad_comments:
+    workpad_comments.sort(key=lambda comment: comment.get("createdAt", ""), reverse=True)
     latest = workpad_comments[0]
-    created = latest.get('createdAt', '')
-    body = latest.get('body', '')
+    created = latest.get("createdAt", "")
+    body = latest.get("body", "")
 
-    # Parse timestamp
     try:
-        dt = datetime.fromisoformat(created.replace('Z', '+00:00'))
-        time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-    except:
+        dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
         time_str = created
 
-    print(f"💬 Latest Workpad Update ({time_str}):")
+    print(f"Latest Workpad Update ({time_str}):")
     print("─" * 60)
 
-    # Show first 20 lines of workpad
-    lines = body.split('\n')[:20]
+    lines = body.split("\n")[:20]
     for line in lines:
         print(f"  {line}")
 
-    if len(body.split('\n')) > 20:
+    if len(body.split("\n")) > 20:
         print("  ...")
         print(f"  (truncated, {len(body.split('\n'))} total lines)")
 else:
-    print("💬 No workpad comments yet")
+    print("No workpad comments yet")
     if comments:
-        print(f"   ({len(comments)} total comments, none from Codex)")
+        print(f"({len(comments)} total comments, none from Codex)")
 
 print()
 print("═" * 60)

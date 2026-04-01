@@ -4,9 +4,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
 cd "$SCRIPT_DIR"
+SYMPHONY_CONFIG_FILE="${SCRIPT_DIR}/projects.yml"
 
 PROJECT=${1:-v0-ipod}
+PROJECT_PORT="$(symphony_project_port "${PROJECT}")"
+PROJECT_DASHBOARD_URL="http://localhost:${PROJECT_PORT}"
 
 echo "🎬 Symphony Monitoring Demo"
 echo "═══════════════════════════════════════"
@@ -20,12 +25,12 @@ echo
 # Get available issues
 echo "Available monitoring targets:"
 echo "  Project: $PROJECT"
-echo "  Dashboard: http://localhost:4001"
+echo "  Dashboard: ${PROJECT_DASHBOARD_URL}"
 echo
 
 # Open web dashboard
 echo "🌐 Opening web dashboard in browser..."
-open http://localhost:4001
+open "${PROJECT_DASHBOARD_URL}"
 sleep 1
 
 # Provide options
@@ -106,7 +111,7 @@ case $choice in
         ./watch-events.sh "$PROJECT"
         ;;
     7)
-        echo "✅ Dashboard is open at http://localhost:4001"
+        echo "✅ Dashboard is open at ${PROJECT_DASHBOARD_URL}"
         echo "   Enjoy watching your agents work!"
         ;;
     *)

@@ -61,6 +61,7 @@ symphony-hub/
 ├── SETUP.md                   # Detailed installation instructions
 ├── LINEAR-GOLDEN-RULE.md      # Minimal quick-start for Linear workflow
 ├── launch.sh                  # Multi-instance Symphony launcher
+├── config.sh                  # Shared config reader for shell tools
 ├── demo.sh                    # Interactive menu launcher
 ├── watch-demo.sh              # 4-pane tmux monitoring dashboard
 ├── watch-workspace.sh         # Git/file change monitor
@@ -277,15 +278,25 @@ defaults:           # Global defaults for all projects
   max_turns: 20     # Max Codex turns per issue
 
 symphony_bin: "..."  # Path to Symphony Elixir binary
+engine:
+  repo_root: "/path/to/open-ai-symphony/symphony"
+  fork_url: "https://github.com/your-user/symphony.git"
+  upstream_url: "https://github.com/openai/symphony.git"
+  expected_branch: "main"
 base_port: 4001      # Phoenix dashboard starting port
 workspace_root: "..."
 logs_root: "..."
+workflows_dir: "..."
 
 projects:
   - name: "project-name"
     github_url: "..."
+    repo_root: "/path/to/local/repo"
     linear_project_slug: "..."
     max_agents: 2
+    default_branch: "main"
+    workspace_strategy: "worktree" # or "clone"
+    workflow_appendix: "workflow-instructions/project-name.md"
     assets:                    # Visual asset configuration
       collect_attachments: true
       scan_project_dirs: true

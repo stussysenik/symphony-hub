@@ -1,33 +1,45 @@
 # Symphony Multi-Project Configuration
-# Location: /Users/s3nik/Desktop/symphony-setup/projects.yml
+# Location: /Users/s3nik/Desktop/symphony-hub/projects.yml
 
 # Global defaults
 defaults:
   max_agents: 2
   polling_interval_ms: 5000
   max_turns: 20
+  default_branch: "main"
+  workspace_strategy: "worktree"
 
 # Symphony binary location (from cloned repo)
 symphony_bin: "/Users/s3nik/Desktop/open-ai-symphony/symphony/elixir/bin/symphony"
+
+# Symphony engine reference (fork + upstream)
+engine:
+  repo_root: "/Users/s3nik/Desktop/open-ai-symphony/symphony"
+  fork_url: "https://github.com/stussysenik/symphony.git"
+  upstream_url: "https://github.com/openai/symphony.git"
+  expected_branch: "main"
 
 # Base port for dashboards (increments for each project)
 base_port: 4001
 
 # Workspace root (where Symphony creates per-issue directories)
-workspace_root: "/Users/s3nik/Desktop/symphony-setup/workspaces"
+workspace_root: "/Users/s3nik/Desktop/symphony-hub/workspaces"
 
 # Logs directory
-logs_root: "/Users/s3nik/Desktop/symphony-setup/logs"
+logs_root: "/Users/s3nik/Desktop/symphony-hub/logs"
 
 # Workflows directory (generated from template)
-workflows_dir: "/Users/s3nik/Desktop/symphony-setup/workflows"
+workflows_dir: "/Users/s3nik/Desktop/symphony-hub/workflows"
 
 # Projects to manage
 projects:
   - name: "v0-ipod"
     github_url: "https://github.com/stussysenik/v0-ipod.git"
+    repo_root: "/Users/s3nik/Desktop/v0-ipod"
     linear_project_slug: "dabd6fee0112"
     max_agents: 2
+    default_branch: "main"
+    workspace_strategy: "worktree"
     assets:
       collect_attachments: true
       scan_project_dirs: true
@@ -42,8 +54,12 @@ projects:
 
   - name: "mymind-clone-web"
     github_url: "https://github.com/stussysenik/mymind-clone-web.git"
+    repo_root: "/Users/s3nik/Desktop/mymind-clone-web"
     linear_project_slug: "372637c999d1"
     max_agents: 2
+    default_branch: "main"
+    workspace_strategy: "worktree"
+    workflow_appendix: "workflow-instructions/mymind-clone-web.md"
     assets:
       collect_attachments: true
       scan_project_dirs: true
@@ -58,8 +74,11 @@ projects:
 
   - name: "recap"
     github_url: "https://github.com/stussysenik/recap.git"
+    repo_root: "/Users/s3nik/Desktop/recap"
     linear_project_slug: "15ec4aaf8ef1"
     max_agents: 2
+    default_branch: "main"
+    workspace_strategy: "worktree"
     assets:
       collect_attachments: true
       scan_project_dirs: true

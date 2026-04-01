@@ -14,6 +14,8 @@ Before you begin, ensure you have:
 - [ ] **Git** installed
 - [ ] **Python 3** installed (for JSON parsing)
 - [ ] **Terminal** access
+- [ ] **Local checkout of each product repo** you want Symphony to manage with worktrees
+- [ ] **Node.js 24+** installed (for semantic-release tooling)
 
 ---
 
@@ -45,6 +47,7 @@ brew install watch
 tmux -V      # Should show tmux version
 watch --version  # Should show watch version
 python3 --version  # Should show Python 3.x
+node -v      # Should show Node 24+
 ```
 
 ### Linux (Ubuntu/Debian)
@@ -61,6 +64,7 @@ sudo apt-get install procps
 tmux -V
 watch --version
 python3 --version
+node -v
 ```
 
 ### Linux (RHEL/CentOS/Fedora)
@@ -76,6 +80,7 @@ sudo yum install procps-ng
 tmux -V
 watch --version
 python3 --version
+node -v
 ```
 
 ---
@@ -156,33 +161,53 @@ cat projects.yml
 Should contain your project configuration. Example:
 
 ```yaml
+workspace_root: "/Users/you/Desktop/symphony-hub/workspaces"
+logs_root: "/Users/you/Desktop/symphony-hub/logs"
+engine:
+  repo_root: "/Users/you/Desktop/open-ai-symphony/symphony"
+  fork_url: "https://github.com/you/symphony.git"
+  upstream_url: "https://github.com/openai/symphony.git"
+  expected_branch: "main"
+
 projects:
-  v0-ipod:
-    workspace: v0-ipod
-    label: Creative Playground
-    linear:
-      team: CRE
-      project: Creative Playground
-    github:
-      name: ipod-shuffle
-      owner: s3nik
-    capabilities:
-      - create_pr
-      - comment
+  - name: "mymind-clone-web"
+    github_url: "https://github.com/you/mymind-clone-web.git"
+    repo_root: "/Users/you/Desktop/mymind-clone-web"
+    linear_project_slug: "372637c999d1"
+    max_agents: 2
+    default_branch: "main"
+    workspace_strategy: "worktree"
+    workflow_appendix: "workflow-instructions/mymind-clone-web.md"
+    assets:
+      collect_attachments: true
+      scan_project_dirs: true
+      capture_screenshots: false
+      supported_formats: [png, jpg, gif, webp, svg, figma]
+```
+
+After editing `projects.yml`, regenerate the per-project workflow files:
+
+```bash
+./generate-workflows.sh
 ```
 
 ### Verify Symphony is Running
 
 ```bash
 # Check Symphony status
+./launch.sh brief
 ./launch.sh status
+./launch.sh sources
 
 # If not running, start it
-./launch.sh start all
+./launch.sh start
 
 # Check Phoenix dashboard
 # Should be accessible at http://localhost:4001
 ```
+
+`./launch.sh brief` is the canonical startup/resume command. It combines the
+health check, runtime summary, topology, latest checkpoint, and queue audit.
 
 ---
 
@@ -191,16 +216,18 @@ projects:
 ### Test 1: Verify Scripts Work
 
 ```bash
-# Test demo launcher
-./demo.sh
+# Test the operator entrypoint
+./launch.sh brief
 
-# Should show menu:
-# 1. Open Phoenix Dashboard
-# 2. Watch Full Demo
-# ...
+# Should show:
+# - health
+# - runtime status
+# - topology
+# - latest checkpoint summary
+# - queue audit
 ```
 
-Press `q` or `Ctrl+C` to exit.
+Press `Ctrl+C` to exit if the queue section is still running.
 
 ### Test 2: Test Linear Connection
 

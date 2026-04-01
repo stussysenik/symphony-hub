@@ -1,8 +1,6 @@
 # Symphony Hub
 
 ![Demo](demo.gif)
-
-
 > Central hub for monitoring and managing Symphony autonomous agents. Watch agents work in real-time with multi-pane dashboards, Linear integration, and detailed progress tracking.
 
 ## What Is This?
@@ -27,6 +25,7 @@
 | **mymind-clone-web** | Product repo where agent PRs land | [stussysenik/mymind-clone-web](https://github.com/stussysenik/mymind-clone-web) |
 
 See **[OPERATIONS.md](OPERATIONS.md)** for the full operator workflow, lifecycle diagram, and CLI reference.
+If you are resuming work, start with `./launch.sh brief`.
 
 ## What's Included
 
@@ -40,6 +39,8 @@ These are **new scripts** created specifically for this demo:
 | `watch-workspace.sh` | 📂 Git/file change monitor |
 | `watch-events.sh` | ⚡ Event highlighter for logs |
 | `watch-linear.sh` | 📋 Linear issue status monitor |
+| `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
+| `checkpoint.sh` | 💾 Local checkpoint snapshot for resumable handoffs |
 
 ### Linear Intake Helper
 
@@ -51,7 +52,10 @@ These are **new scripts** created specifically for this demo:
 These files are part of the Symphony system:
 
 - `launch.sh` - Symphony's multi-instance launcher
-- `projects.yml` - Project configuration
+- `config.sh` - Shared config helpers used by launch/monitor scripts
+- `projects.yml` - Project configuration (repo roots, workspace strategy, Linear slugs)
+- `generate-workflows.sh` - Workflow generator from config + template
+- `checkpoint.sh` - Snapshot current hub/engine/runtime state for continuation
 - `logs/` - Agent logs (generated at runtime)
 - `pids/` - Process IDs (generated at runtime)
 - `workspaces/` - Agent work directories (generated at runtime)
@@ -89,15 +93,19 @@ See `docs/VISION.md` for the full guide.
 ### Documentation
 - `README.md` - This file (project overview)
 - `SETUP.md` - Detailed setup instructions
+- `docs/README.md` - Canonical doc map and daily operator entrypoint
 - `LINEAR-GOLDEN-RULE.md` - **START HERE** - Minimal quick-start guide
 - `LINEAR-INTAKE.md` - Recommended intake setup for Triage + templates
 - `LINEAR-WORKFLOW.md` - Complete Linear integration guide
 - `MONITORING-README.md` - Monitoring tools reference
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
+- `docs/CHECKPOINTS.md` - Local snapshot and handoff workflow
 - `docs/RESEARCH.md` - What we learned from Symphony
 - `docs/DECISIONS.md` - Why we built Hub this way
 - `docs/ARCHITECTURE.md` - How Hub is structured
 - `docs/VISION.md` - Visual assets guide
+- `openspec/` - Proposal, design, spec, and task artifacts for hub changes
+- `CHANGELOG.md` - Generated release history
 
 ---
 
@@ -132,6 +140,22 @@ The demo will:
 2. Show monitoring options
 3. Ready to monitor agents when you create Linear issues
 
+## Daily Operator Start
+
+Use `symphony-hub` as the operator home going forward.
+
+```bash
+./launch.sh brief
+./launch.sh start mymind-clone-web
+```
+
+`brief` is the default startup/resume surface. It shows:
+- health
+- active instances
+- topology
+- latest checkpoint summary
+- Linear queue hygiene
+
 ---
 
 ## How It Works
@@ -145,7 +169,7 @@ Symphony watches your Linear project for new issues. To start an agent:
    - Fast path: create it directly in `Todo` if it is already implementation-ready
 2. **Move the issue to `Todo`** when you want Symphony to pick it up
 3. **Symphony detects it** (polls every few seconds)
-4. **Agent starts automatically** - Creates workspace, clones repo, begins work
+4. **Agent starts automatically** - Creates a per-issue workspace checkout using the configured strategy (`clone` or `worktree`), then begins work
 
 ### Monitoring Agent Progress
 
@@ -177,8 +201,13 @@ Use monitoring scripts to watch in real-time:
 ./watch-demo.sh
 
 # Or monitor individually:
+./launch.sh brief                # Startup/resume summary
 ./watch-linear.sh CRE-5          # Watch specific Linear issue
-./watch-workspace.sh v0-ipod     # Watch agent workspace
+./linear-audit.sh                # Audit queues, stale issues, and review gaps
+./launch.sh sources              # Print hub/engine/project topology
+./launch.sh checkpoint pre-review
+./watch-workspace.sh v0-ipod     # Watch the latest workspace for a project
+./watch-workspace.sh v0-ipod CRE-5
 ./watch-events.sh v0-ipod        # Watch agent events
 ```
 
@@ -204,11 +233,12 @@ symphony-hub/
 │   ├── watch-workspace.sh   # Git monitor
 │   ├── watch-events.sh      # Event highlighter
 │   ├── watch-linear.sh      # Linear status monitor
+│   ├── linear-audit.sh      # Queue hygiene report
 │   └── linear-new.sh        # Pre-filled Linear issue composer launcher
 │
 ├── Symphony Core
 │   ├── launch.sh            # Multi-instance launcher (+ --tui, health)
-│   └── projects.yml         # Project configuration (+ assets config)
+│   └── projects.yml         # Project configuration (+ repo roots, worktrees, assets)
 │
 ├── tui/                     # Go TUI Dashboard
 │   ├── main.go              # Entry point
@@ -234,7 +264,18 @@ symphony-hub/
 │   ├── LINEAR-GOLDEN-RULE.md # Quick-start guide
 │   ├── LINEAR-INTAKE.md     # Intake setup for Triage + templates
 │   ├── LINEAR-WORKFLOW.md   # Linear integration guide
-│   └── MONITORING-README.md # Monitoring tools reference
+│   ├── MONITORING-README.md # Monitoring tools reference
+│   └── docs/README.md       # Canonical doc map
+│
+├── Change Management
+│   ├── openspec/            # Proposal/design/spec/task artifacts
+│   └── .codex/              # OpenSpec prompts + Codex skills
+│
+├── Release
+│   ├── package.json         # semantic-release toolchain
+│   ├── release.config.cjs   # Release channels and plugins
+│   ├── CHANGELOG.md         # Generated changelog
+│   └── .github/workflows/   # GitHub release workflow
 │
 ├── Configuration
 │   ├── .env.local.example   # Template (committed)
@@ -243,6 +284,9 @@ symphony-hub/
 │
 ├── Linear Intake Templates
 │   └── linear-templates/    # Copy-ready template blueprints for Linear
+│
+├── Workflow Appendices
+│   └── workflow-instructions/ # Optional per-project workflow addenda
 │
 └── Runtime (Git Ignored)
     ├── logs/                # Symphony logs
@@ -309,7 +353,7 @@ symphony-hub/
 
 ## What Makes This Reusable
 
-✅ **No hardcoded paths** - Scripts use relative paths
+✅ **Config-driven paths** - Runtime roots and local repo paths live in `projects.yml`
 ✅ **Configuration template** - `.env.local.example` for easy setup
 ✅ **Clear documentation** - Step-by-step guides
 ✅ **Dependency checks** - Scripts verify tmux, watch, python3

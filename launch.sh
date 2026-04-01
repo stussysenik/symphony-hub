@@ -4,10 +4,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
 CONFIG_FILE="${SCRIPT_DIR}/projects.yml"
+SYMPHONY_CONFIG_FILE="${CONFIG_FILE}"
 ENV_FILE="${SCRIPT_DIR}/.env.local"
 PID_DIR="${SCRIPT_DIR}/pids"
-LOG_DIR="${SCRIPT_DIR}/logs"
+LOG_DIR="$(symphony_config_get "logs_root")"
+WORKFLOWS_DIR="$(symphony_config_get "workflows_dir")"
+ENGINE_REPO_ROOT="$(symphony_config_get "engine.repo_root")"
+ENGINE_FORK_URL="$(symphony_config_get "engine.fork_url")"
+ENGINE_UPSTREAM_URL="$(symphony_config_get "engine.upstream_url")"
+ENGINE_EXPECTED_BRANCH="$(symphony_config_get "engine.expected_branch")"
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,67 +25,49 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Ensure directories exist
-mkdir -p "${PID_DIR}" "${LOG_DIR}"
+mkdir -p "${PID_DIR}" "${LOG_DIR}" "${WORKFLOWS_DIR}"
 
-# Load environment variables
-if [ -f "${ENV_FILE}" ]; then
-    set -a
-    source "${ENV_FILE}"
-    set +a
-else
-    echo -e "${RED}Error: ${ENV_FILE} not found${NC}"
-    exit 1
-fi
+SYMPHONY_BIN="$(symphony_config_get "symphony_bin")"
 
-# Check if Symphony binary exists
-SYMPHONY_BIN=$(python3 -c "import yaml; print(yaml.safe_load(open('${CONFIG_FILE}'))['symphony_bin'])")
-if [ ! -f "${SYMPHONY_BIN}" ]; then
-    echo -e "${RED}Error: Symphony binary not found at ${SYMPHONY_BIN}${NC}"
-    exit 1
-fi
+load_env_if_present() {
+    if [ -f "${ENV_FILE}" ]; then
+        set -a
+        # shellcheck disable=SC1090
+        source "${ENV_FILE}"
+        set +a
+    fi
+}
+
+require_env_file() {
+    load_env_if_present
+    if [ ! -f "${ENV_FILE}" ]; then
+        echo -e "${RED}Error: ${ENV_FILE} not found${NC}"
+        exit 1
+    fi
+}
+
+require_symphony_bin() {
+    if [ ! -f "${SYMPHONY_BIN}" ]; then
+        echo -e "${RED}Error: Symphony binary not found at ${SYMPHONY_BIN}${NC}"
+        exit 1
+    fi
+}
 
 # Function to get projects from config
 get_projects() {
-    CONFIG_FILE="${CONFIG_FILE}" python3 << 'EOF'
-import yaml
-import sys
-import os
-
-config_file = os.environ.get('CONFIG_FILE')
-with open(config_file, 'r') as f:
-    config = yaml.safe_load(f)
-
-for project in config['projects']:
-    print(project['name'])
-EOF
+    symphony_list_projects
 }
 
 # Function to get project port
 get_project_port() {
-    local project_name=$1
-    CONFIG_FILE="${CONFIG_FILE}" python3 << EOF
-import yaml
-import os
-
-config_file = os.environ.get('CONFIG_FILE')
-with open(config_file, 'r') as f:
-    config = yaml.safe_load(f)
-
-base_port = config.get('base_port', 4001)
-projects = config['projects']
-
-for i, project in enumerate(projects):
-    if project['name'] == '${project_name}':
-        print(base_port + i)
-        break
-EOF
+    symphony_project_port "$1"
 }
 
 # Function to start a single Symphony instance
 start_project() {
     local project_name=$1
     local port=$(get_project_port "${project_name}")
-    local workflow_file="${SCRIPT_DIR}/workflows/${project_name}.WORKFLOW.md"
+    local workflow_file="${WORKFLOWS_DIR}/${project_name}.WORKFLOW.md"
     local pid_file="${PID_DIR}/${project_name}.pid"
     local log_file="${LOG_DIR}/${project_name}.log"
 
@@ -165,7 +155,7 @@ status_project() {
 
     if [ ! -f "${pid_file}" ]; then
         echo -e "  ${project_name}: ${RED}STOPPED${NC}"
-        return 1
+        return 0
     fi
 
     local pid=$(cat "${pid_file}")
@@ -175,7 +165,7 @@ status_project() {
     else
         echo -e "  ${project_name}: ${RED}STOPPED${NC} (stale PID)"
         rm -f "${pid_file}"
-        return 1
+        return 0
     fi
 }
 
@@ -197,6 +187,8 @@ logs_project() {
 
 # Command handlers
 cmd_start() {
+    require_env_file
+    require_symphony_bin
     if [ $# -eq 0 ]; then
         # Start all projects
         echo -e "${BLUE}[symphony]${NC} Starting all Symphony instances..."
@@ -265,6 +257,120 @@ cmd_logs() {
     logs_project "$1"
 }
 
+cmd_audit() {
+    load_env_if_present
+    exec "${SCRIPT_DIR}/linear-audit.sh" "$@"
+}
+
+cmd_sources() {
+    echo -e "${BLUE}[symphony]${NC} Source Topology"
+    echo
+    echo "Hub repo:"
+    echo "  Path: ${SCRIPT_DIR}"
+    git -C "${SCRIPT_DIR}" remote -v | sed 's/^/  /'
+    echo
+    echo "Engine repo:"
+    echo "  Local path: ${ENGINE_REPO_ROOT}"
+    echo "  Binary: ${SYMPHONY_BIN}"
+    echo "  Fork URL: ${ENGINE_FORK_URL}"
+    echo "  Upstream URL: ${ENGINE_UPSTREAM_URL}"
+    echo "  Expected branch: ${ENGINE_EXPECTED_BRANCH}"
+    if [ -n "${ENGINE_REPO_ROOT}" ] && [ -d "${ENGINE_REPO_ROOT}" ] && git -C "${ENGINE_REPO_ROOT}" rev-parse --git-dir >/dev/null 2>&1; then
+        echo "  Remotes:"
+        git -C "${ENGINE_REPO_ROOT}" remote -v | sed 's/^/    /'
+        echo "  Branches:"
+        git -C "${ENGINE_REPO_ROOT}" branch -vv | sed 's/^/    /'
+    else
+        echo "  Remotes: unavailable"
+    fi
+    echo
+    echo "Runtime roots:"
+    echo "  Workspaces: $(symphony_config_get "workspace_root")"
+    echo "  Logs: ${LOG_DIR}"
+    echo "  Workflows: ${WORKFLOWS_DIR}"
+    echo
+    echo "Projects:"
+    for project in $(get_projects); do
+        local repo_root
+        local strategy
+        local slug
+        repo_root="$(symphony_project_field "${project}" "repo_root")"
+        strategy="$(symphony_project_field "${project}" "workspace_strategy")"
+        slug="$(symphony_project_field "${project}" "linear_project_slug")"
+        echo "  - ${project}"
+        echo "      repo_root: ${repo_root}"
+        echo "      workspace_strategy: ${strategy}"
+        echo "      linear_project_slug: ${slug}"
+    done
+}
+
+cmd_checkpoint() {
+    load_env_if_present
+    exec "${SCRIPT_DIR}/checkpoint.sh" "$@"
+}
+
+cmd_brief() {
+    load_env_if_present
+
+    local checkpoint_root="${SCRIPT_DIR}/checkpoints"
+    local latest_checkpoint="${checkpoint_root}/latest"
+    local workspace_root
+    workspace_root="$(symphony_config_get "workspace_root")"
+
+    echo -e "${BLUE}[symphony]${NC} Operator Brief"
+    echo "Generated: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    echo
+
+    echo "Health:"
+    cmd_health
+
+    echo "Runtime:"
+    cmd_status
+    echo
+
+    echo "Topology:"
+    echo "  Hub path: ${SCRIPT_DIR}"
+    echo "  Hub remote: $(git -C "${SCRIPT_DIR}" remote get-url origin 2>/dev/null || echo unavailable)"
+    echo "  Engine repo: ${ENGINE_REPO_ROOT:-unconfigured}"
+    echo "  Engine upstream: ${ENGINE_UPSTREAM_URL:-unconfigured}"
+    echo "  Workspaces: ${workspace_root}"
+    echo "  Logs: ${LOG_DIR}"
+    echo "  Workflows: ${WORKFLOWS_DIR}"
+    echo
+
+    echo "Projects:"
+    for project in $(get_projects); do
+        local strategy
+        local slug
+        strategy="$(symphony_project_field "${project}" "workspace_strategy")"
+        slug="$(symphony_project_field "${project}" "linear_project_slug")"
+        echo "  - ${project} (${strategy}, ${slug})"
+    done
+    echo
+
+    echo "Latest checkpoint:"
+    if [ -e "${latest_checkpoint}" ]; then
+        local resolved_checkpoint
+        resolved_checkpoint="$(cd "${latest_checkpoint}" && pwd -P)"
+        echo "  Path: ${resolved_checkpoint}"
+        if [ -f "${latest_checkpoint}/SUMMARY.md" ]; then
+            sed 's/^/  /' "${latest_checkpoint}/SUMMARY.md"
+        else
+            echo "  SUMMARY.md missing"
+        fi
+    else
+        echo "  No checkpoint available yet"
+    fi
+    echo
+
+    echo "Queue snapshot:"
+    if [ -n "${LINEAR_API_KEY:-}" ]; then
+        "${SCRIPT_DIR}/linear-audit.sh" "$@"
+    else
+        echo "  LINEAR_API_KEY not set; queue audit skipped"
+    fi
+}
+
 cmd_tui() {
     local tui_binary="${SCRIPT_DIR}/tui/symphony-hub"
 
@@ -286,6 +392,7 @@ cmd_tui() {
 }
 
 cmd_health() {
+    load_env_if_present
     echo -e "${BLUE}[symphony]${NC} Health Check"
     echo
 
@@ -295,6 +402,20 @@ cmd_health() {
         echo -e "${GREEN}OK${NC} (${SYMPHONY_BIN})"
     else
         echo -e "${RED}NOT FOUND${NC}"
+    fi
+
+    echo -n "  Engine repo: "
+    if [ -n "${ENGINE_REPO_ROOT}" ] && [ -d "${ENGINE_REPO_ROOT}" ]; then
+        echo -e "${GREEN}OK${NC} (${ENGINE_REPO_ROOT})"
+    else
+        echo -e "${RED}NOT FOUND${NC}"
+    fi
+
+    echo -n "  Engine upstream: "
+    if [ -n "${ENGINE_UPSTREAM_URL}" ]; then
+        echo -e "${GREEN}${ENGINE_UPSTREAM_URL}${NC}"
+    else
+        echo -e "${YELLOW}NOT SET${NC}"
     fi
 
     # Check running instances
@@ -350,6 +471,11 @@ Commands:
   restart [project]  Restart Symphony instance(s)
   status             Show status of all instances
   logs <project>     Tail logs for a project
+  audit [options]    Audit Linear issue hygiene across configured projects
+  sources            Show hub/engine/project topology
+  brief [options]    Print the operator startup/resume summary
+  resume [options]   Alias for brief
+  checkpoint [label] Snapshot hub/engine/runtime state for later continuation
   tui                Launch Go TUI dashboard
   health             Run health checks
   help               Show this help message
@@ -367,6 +493,11 @@ Examples:
   ./launch.sh restart            # Restart all projects
   ./launch.sh status             # Show status of all instances
   ./launch.sh logs v0-ipod       # Tail logs for v0-ipod
+  ./launch.sh audit              # Review queue hygiene across projects
+  ./launch.sh sources            # Print hub/engine/project topology
+  ./launch.sh brief              # Print the startup/resume summary
+  ./launch.sh resume             # Same as brief
+  ./launch.sh checkpoint         # Save a resumable local checkpoint
 
 Projects:
 HELP
@@ -410,6 +541,18 @@ main() {
             ;;
         logs)
             cmd_logs "$@"
+            ;;
+        audit)
+            cmd_audit "$@"
+            ;;
+        sources)
+            cmd_sources "$@"
+            ;;
+        brief|resume)
+            cmd_brief "$@"
+            ;;
+        checkpoint)
+            cmd_checkpoint "$@"
             ;;
         tui)
             cmd_tui

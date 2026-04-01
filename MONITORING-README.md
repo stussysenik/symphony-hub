@@ -62,10 +62,11 @@ Complete monitoring dashboard with 4 synchronized panes.
 Shows workspace activity, git commits, and file changes.
 
 ```bash
-./watch-workspace.sh <project>
+./watch-workspace.sh <project> [issue-id]
 
 # Example:
 watch -c -n 3 './watch-workspace.sh v0-ipod'
+watch -c -n 3 './watch-workspace.sh v0-ipod CRE-5'
 ```
 
 **Shows:**
@@ -74,6 +75,7 @@ watch -c -n 3 './watch-workspace.sh v0-ipod'
 - Recent commits (last 5)
 - Recently modified files (last 10)
 - Workspace statistics
+- Uses `workspace_root` from `projects.yml`
 
 ### 4. **watch-linear.sh** - Issue Status Monitor
 Monitors Linear issue state, workpad comments, and PR attachments.
@@ -331,7 +333,7 @@ while true; do clear; ./launch.sh status; sleep 2; done
 ## File Structure
 
 ```
-symphony-setup/
+symphony-hub/
 ├── demo.sh                  # Interactive launcher
 ├── watch-demo.sh            # tmux multi-pane
 ├── watch-workspace.sh       # Git/file monitor

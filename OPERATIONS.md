@@ -17,7 +17,7 @@ flowchart TD
 
     subgraph Symphony["Symphony (Orchestrator)"]
         B1[Polls Linear] --> B2[Detects Todo issue]
-        B2 --> B3[Creates workspace + worktree]
+        B2 --> B3[Creates workspace checkout]
         B3 --> B4[Dispatches Codex agent]
     end
 
@@ -33,7 +33,7 @@ flowchart TD
     subgraph Cleanup["Cleanup"]
         D1[Orchestrator detects Done state]
         D1 --> D2[before_remove hook fires]
-        D2 --> D3[git worktree remove + prune]
+        D2 --> D3[Project cleanup hook runs]
     end
 
     A2 --> B1
@@ -65,6 +65,10 @@ Pick your preferred surface:
 |--------|---------------|
 | Web dashboard (real-time) | `open http://localhost:4002` |
 | TUI terminal dashboard | `./launch.sh --tui` |
+| Startup or resume brief | `./launch.sh brief` |
+| Queue hygiene audit | `./launch.sh audit` |
+| Source topology | `./launch.sh sources` |
+| Save resumable checkpoint | `./launch.sh checkpoint pre-review` |
 | Tail logs | `tail -f ~/Desktop/open-ai-symphony/symphony/elixir/log/symphony.log` |
 | JSON API — full state | `curl http://localhost:4002/api/v1/state` |
 | JSON API — single issue | `curl http://localhost:4002/api/v1/CRE-6` |
@@ -77,7 +81,7 @@ Agents create PRs automatically and move the Linear ticket to **Human Review**.
 - Go to the PR on GitHub (link is in the Linear ticket and dashboard)
 - Review the diff, run the app locally if needed:
   ```bash
-  cd ~/Desktop/symphony-setup/workspaces/mymind-clone-web/CRE-6
+  cd ~/Desktop/symphony-hub/workspaces/mymind-clone-web/CRE-6
   cat PROGRESS.md                    # What the agent did
   git diff origin/main --stat        # Summary of changes
   bun install && bun run dev         # Start dev server at localhost:3000
@@ -98,8 +102,8 @@ Once you move the ticket to **Merging**, the agent automatically:
 
 When a ticket hits **Done**, the orchestrator automatically:
 1. Fires the `before_remove` hook
-2. Runs `git worktree remove` for the workspace
-3. Runs `git worktree prune`
+2. Cleans up the workspace according to the project's configured strategy
+3. For worktree projects, removes the worktree and prunes stale refs
 
 No manual cleanup required.
 
@@ -112,7 +116,7 @@ No manual cleanup required.
 Go to the workspace and do it manually:
 
 ```bash
-cd ~/Desktop/symphony-setup/workspaces/mymind-clone-web/CRE-6
+cd ~/Desktop/symphony-hub/workspaces/mymind-clone-web/CRE-6
 git add -A
 git commit -m "feat(tags): implement tag prioritization
 
@@ -130,7 +134,7 @@ When multiple agents work on overlapping code, land PRs sequentially:
 2. The next agent's `land` skill will auto-rebase before merging
 3. If rebase fails, go to the workspace and resolve manually:
    ```bash
-   cd ~/Desktop/symphony-setup/workspaces/mymind-clone-web/CRE-8
+   cd ~/Desktop/symphony-hub/workspaces/mymind-clone-web/CRE-8
    git fetch origin main
    git rebase origin/main
    # resolve conflicts
@@ -144,9 +148,67 @@ If workspaces linger after tickets are Done:
 ```bash
 cd ~/Desktop/mymind-clone-web
 git worktree list                    # See all worktrees
-git worktree remove ~/Desktop/symphony-setup/workspaces/mymind-clone-web/CRE-6
+git worktree remove ~/Desktop/symphony-hub/workspaces/mymind-clone-web/CRE-6
 git worktree prune                   # Clean up stale references
 ```
+
+### Queue cleanup
+
+Before starting a new batch, audit the configured projects:
+
+```bash
+cd ~/Desktop/symphony-hub
+./launch.sh audit
+./launch.sh audit --project mymind-clone-web --stale-hours 12
+```
+
+Use the report to:
+- move half-baked requests back to `Triage` or an archived/non-executing state
+- spot `Human Review` or `Merging` issues missing PR attachments
+- find active tickets without a `Codex Workpad`
+- identify stale `Todo`, `In Progress`, and `Rework` tickets
+
+Preservation-first rule:
+- do not delete workflow tickets to make the board look clean
+- remove them from active views by state, not by erasing history
+- leave a short note when archiving, superseding, or splitting work
+- preserve PR links, validation evidence, and workpad history for future audits
+
+### Changing spec mid-flight
+
+Use the smallest possible intervention that preserves a single coherent task:
+
+- Before `Todo`: edit the issue directly. It is still intake.
+- In `In Progress`: small clarifications should be added as one explicit Linear comment with a `SPEC UPDATE` header.
+- In `In Progress`: if the change alters architecture, acceptance criteria, or scope meaningfully, move the ticket back out of execution, rewrite it, and then re-queue it.
+- In `Human Review`: implementation corrections belong in PR review comments. Net-new scope should become a follow-up issue.
+
+This keeps the run stable:
+- Linear issue = execution truth
+- single `## Codex Workpad` comment = progress truth
+- local checkpoint = operator handoff truth
+
+Avoid rewriting the task in five different places. One issue, one workpad, one coherent PR is the clean path.
+
+If the current run is no longer the right path, archive or supersede it cleanly instead of deleting it. That keeps the system resumable and auditable.
+
+### Checkpoints and handoff
+
+Before a risky refactor, before review, or before handing work to another agent, save a local checkpoint:
+
+```bash
+cd ~/Desktop/symphony-hub
+./launch.sh sources
+./launch.sh checkpoint pre-review
+```
+
+This writes a timestamped snapshot under `checkpoints/` with:
+- current `symphony-hub` git state
+- current engine fork/upstream reference and git state
+- launcher status, workspace inventory, and recent log tails
+- Linear queue audit output when API access is available
+
+Treat checkpoints as local persistence for operator context. They are not the source of truth for issue execution; Linear workpads still own per-issue progress.
 
 ### Agent errors
 
@@ -177,12 +239,28 @@ open-ai-symphony (github.com/stussysenik/symphony)
 mymind-clone-web (github.com/stussysenik/mymind-clone-web)
   Role: Product repo — agent PRs land here
   Language: TypeScript (Next.js)
-  Runtime workspace: ~/Desktop/symphony-setup/workspaces/mymind-clone-web/
+  Runtime workspace: ~/Desktop/symphony-hub/workspaces/mymind-clone-web/
 ```
+
+### Configuration note
+
+`projects.yml` is the source of truth for runtime paths and workspace behavior:
+
+- `workspace_root` defines where per-issue workspaces live.
+- `repo_root` points at the canonical local checkout for a project.
+- `workspace_strategy` chooses `clone` or `worktree` per project.
+- `engine.*` records the local fork and upstream OpenAI Symphony reference.
+- `workflow_appendix` appends project-specific workflow notes without forking the shared template.
+
+After changing any of those fields, regenerate the workflow files with `./generate-workflows.sh`.
 
 ---
 
 ## Versioning & Tagging
+
+Going forward, `symphony-hub` should use semantic-release for progressive
+versioning and GitHub releases. Historical `beta/*` tags remain part of the
+repo history, but new automated releases use semver `v*` tags.
 
 | Repo | Tag format | Example |
 |------|-----------|---------|
@@ -194,8 +272,9 @@ mymind-clone-web (github.com/stussysenik/mymind-clone-web)
 
 ```bash
 cd ~/Desktop/symphony-hub
-git tag -a v0.2.0 -m "Dashboard revamp + workflow configs"
-git push origin main --tags
+npm ci
+npm run release:dry-run
+# Automated releases run from GitHub Actions on push to main/next/beta/alpha
 ```
 
 ### open-ai-symphony (fork management)
@@ -237,6 +316,8 @@ git push origin main --tags
 ./launch.sh start <project>          # Start orchestrator + dashboard
 ./launch.sh stop <project>           # Stop gracefully
 ./launch.sh health                   # Check if running
+./launch.sh brief                    # Startup/resume summary
+./launch.sh resume                   # Alias for brief
 ./launch.sh --tui                    # Start with TUI monitor
 ./launch.sh tui                      # Launch TUI standalone
 ./launch.sh status                   # Show running instances
@@ -255,15 +336,16 @@ git push origin main --tags
 ```bash
 ./watch-demo.sh                      # 4-pane tmux dashboard
 ./watch-linear.sh CRE-5              # Watch specific Linear issue
-./watch-workspace.sh <workspace>     # Watch git/file changes
-./watch-events.sh <workspace>        # Watch agent event stream
+./watch-workspace.sh <project-name>  # Watch the most active issue workspace for a project
+./watch-events.sh <project-name>     # Watch agent event stream
+./linear-audit.sh                    # Audit queue hygiene across configured Linear projects
 ./linear-new.sh                      # Open pre-filled Linear issue composer
 ```
 
 ### Agent Workspace Inspection
 
 ```bash
-cd ~/Desktop/symphony-setup/workspaces/mymind-clone-web/CRE-6
+cd ~/Desktop/symphony-hub/workspaces/mymind-clone-web/CRE-6
 cat PROGRESS.md                      # Agent's progress notes
 cat LEARNING.md                      # Agent's learning notes
 git diff origin/main --stat          # Summary of changes

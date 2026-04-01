@@ -58,26 +58,27 @@ navigation cost.
 
 ---
 
-## Decision 3: Beta Tags, Not Semver
+## Decision 3: Semantic Release With Semver Channels
 
-**Chose:** `beta/descriptive-name` tags (e.g., `beta/foundation`, `beta/tui-scaffold`)
-**Over:** Semantic versioning (v0.1.0, v0.2.0)
+**Chose:** semantic-release with semver tags (`v1.2.3`) and prerelease channels
+**Over:** manual `beta/descriptive-name` tags
 
 **Why:**
 
-- **Closed beta, solo developer** — Semver communicates compatibility promises
-  to downstream consumers. We have no downstream consumers yet. No one depends
-  on our API stability.
-- **Descriptive names** — `beta/vision-foundation` tells you what changed
-  better than `v0.4.0`. During rapid development, descriptive tags are more
-  useful than version numbers.
-- **No false promises** — Publishing `v1.0.0` implies production readiness.
-  We're not there. `beta/` prefix makes the status obvious.
-- **Easy migration** — When we're ready for public release, we can start
-  semver from v1.0.0. The beta tags remain as historical markers.
+- **Reproducible releases** — The hub is now an operator-grade system. Releases
+  should be derived from commit history, not remembered manually.
+- **Progressive channels** — Stable releases can come from `main` while
+  prerelease work can flow through `next`, `beta`, or `alpha`.
+- **Generated artifacts** — semantic-release gives us tags, GitHub releases,
+  and changelog updates from the same control loop.
+- **Compatibility with mature tooling** — Semver works with release dashboards,
+  automation, and downstream operational expectations.
+- **Historical continuity** — Existing `beta/*` tags can remain as legacy
+  markers while new automation establishes the semver baseline.
 
-**Tradeoff:** Can't use semver-based tooling (dependabot, version bumpers).
-Not a problem since we have no dependents.
+**Tradeoff:** The first semver release becomes a new starting point because the
+older `beta/*` tags are not semver-compatible. Worth it for automated, auditable
+release flow.
 
 ---
 
@@ -169,14 +170,75 @@ quality improvement in agent output justifies both.
 
 ---
 
+## Decision 8: Preserve History, Hide Noise
+
+**Chose:** Archive-first workflow design
+**Over:** Deleting tickets, comments, or operator artifacts to keep things tidy
+
+**Why:**
+
+- **Reproducibility** — A mature agentic workflow needs durable evidence. The
+  issue, workpad, PR, validation notes, and checkpoint together explain what
+  happened and why.
+- **Auditability** — Teams need to answer basic questions quickly: what
+  changed, what was attempted, what was reviewed, and why a path was
+  abandoned. Deletion destroys that chain.
+- **Velocity without amnesia** — Fast teams do not win by forgetting. They win
+  by keeping the active surface small while preserving the full execution
+  record behind it.
+- **Digital minimalism** — Calm systems come from focused states, views, and
+  defaults. They do not come from erasing history.
+- **Agent continuity** — Agents and operators both benefit when prior
+  attempts, blockers, and clarifications remain available as reference.
+
+**Design rule:** never delete workflow history just to make the system look
+clean. Archive it, move it out of active views, and leave concise closure or
+supersession notes.
+
+**Tradeoff:** Preserving history creates more total artifacts over time. The
+answer is stronger filtering and better views, not destructive cleanup.
+
+---
+
+## Decision 9: Optimize for Velocity, Agency, and Minimalism Together
+
+**Chose:** A narrow control loop with strong gates
+**Over:** Maximum automation or maximum ceremony
+
+**Why:**
+
+- **Velocity** — Once work is agent-ready, it should move with minimal human
+  intervention.
+- **Agency** — Agents need enough context and authority to execute meaningful
+  work, not just tiny chores.
+- **Minimalism** — Humans should only engage at the points where judgment is
+  actually required.
+
+That leads to three human gates:
+
+- **Spec Gate** — is the issue truly ready for execution?
+- **Review Gate** — is the output correct and high quality?
+- **Exception Gate** — is the agent blocked or materially off-course?
+
+Everything else should be systemized through Linear states, the single
+workpad, the PR, and checkpointing.
+
+**Tradeoff:** Strong gates can feel slower up front. In practice they reduce
+thrash, restarts, and review waste, which is the only form of speed that
+matters at scale.
+
+---
+
 ## Decision Summary
 
 | Decision | Chose | Key Reason |
 |----------|-------|------------|
 | TUI framework | Go + Charm | Single binary, rich ecosystem |
 | File structure | SRP (one concern per file) | Navigability, teaches architecture |
-| Versioning | beta/ tags | Descriptive, no false promises |
+| Versioning | semantic-release + semver | Automated, auditable release flow |
 | Agent interface | Linear issues | Existing integration, rich model |
 | Repo structure | Separate repo | Wrapper vs. core separation |
 | Visual support | Multimodal prompts | Agents see mockups, better output |
 | Commit format | Conventional commits | Scannable, parseable history |
+| History handling | Archive-first workflow | Reproducibility and auditability |
+| Operating model | Strong-gate control loop | Velocity + agency + minimalism |

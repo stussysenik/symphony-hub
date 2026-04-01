@@ -16,7 +16,7 @@ tracker:
 polling:
   interval_ms: 5000
 workspace:
-  root: /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
+  root: /Users/s3nik/Desktop/symphony-hub/workspaces/mymind-clone-web
 hooks:
   after_create: |
     MAIN_REPO="/Users/s3nik/Desktop/mymind-clone-web"
@@ -26,17 +26,40 @@ hooks:
 
     cd "$MAIN_REPO" && git fetch origin
 
-    # Remove empty workspace dir, create worktree in its place
+    # Remove the empty workspace dir Symphony created, then replace it with a git worktree.
     rmdir "$WORKSPACE"
     git worktree add "$WORKSPACE" -b "$BRANCH" origin/main
 
     cd "$WORKSPACE"
 
-    # Install dependencies
-    if [ -f "bun.lockb" ]; then bun install
-    elif [ -f "pnpm-lock.yaml" ]; then pnpm install
-    elif [ -f "yarn.lock" ]; then yarn install
-    elif [ -f "package.json" ]; then npm install
+    # Auto-detect package manager and install dependencies
+    if [ -f "package.json" ]; then
+      if [ -f "bun.lockb" ]; then
+        bun install
+      elif [ -f "pnpm-lock.yaml" ]; then
+        pnpm install
+      elif [ -f "yarn.lock" ]; then
+        yarn install
+      else
+        npm install
+      fi
+    fi
+
+    # Python projects
+    if [ -f "requirements.txt" ]; then
+      pip install -r requirements.txt
+    elif [ -f "pyproject.toml" ]; then
+      pip install -e .
+    fi
+
+    # Rust projects
+    if [ -f "Cargo.toml" ]; then
+      cargo build
+    fi
+
+    # Go projects
+    if [ -f "go.mod" ]; then
+      go mod download
     fi
   before_remove: |
     MAIN_REPO="/Users/s3nik/Desktop/mymind-clone-web"
@@ -262,17 +285,43 @@ When a ticket reaches `Merging` state (human approved):
 3. Update the Linear issue to `Done` state.
 4. Add a final workpad note confirming merge SHA and branch cleanup.
 
+## Core Heuristics
+
+- Prefer the smallest diff that fully resolves the issue.
+- Reuse existing abstractions and conventions before adding new structure.
+- Keep runtime, monitoring, and operator ergonomics simple and observable.
+- Record durable findings where the repository already expects them.
+
+## Project-specific context
+
+Repository: https://github.com/stussysenik/mymind-clone-web.git
+Local repo: /Users/s3nik/Desktop/mymind-clone-web
+Project: mymind-clone-web
+Workspace: /Users/s3nik/Desktop/symphony-hub/workspaces/mymind-clone-web
+Workspace strategy: worktree
+Default branch: main
+
+When working on this project:
+- Follow existing code style and conventions found in the repository.
+- Check for CONTRIBUTING.md, README.md, or .github/ documentation for project-specific guidelines.
+- If tests exist, ensure they pass before creating PRs.
+- If CI/CD workflows exist, ensure they pass before moving to `Human Review`.
+- Respect existing directory structure and file organization patterns.
+- If the repo already contains issue journals such as `PROGRESS.md` or `LEARNING.md`, append a concise note for this ticket.
+
+
+
 ## Implementation Approach
 
 ### Execution order
-1. Read attached screenshots — understand what's wrong
-2. Reproduce — start dev server, confirm the bug exists
-3. Find exact lines — smallest possible diff
-4. Implement — targeted changes, ordered by importance
-5. Test — dev server, curl endpoints, browser console
-6. Document — PROGRESS.md, LEARNING.md, README.md with screenshots
+1. Read attached screenshots and issue context.
+2. Reproduce the current behavior before changing code.
+3. Find the exact change surface and keep the diff minimal.
+4. Implement in dependency order.
+5. Test with concrete commands and the affected user flow.
+6. Document the outcome in repo-local issue notes when the repo already uses them.
 
-### Commit convention (semantic release)
+### Commit convention
 Use conventional commits: `type(scope): description`
 - `fix(tags): resolve Instagram tag defaulting to placeholder values`
 - `feat(search): add semantic search with embeddings`
@@ -281,7 +330,9 @@ Use conventional commits: `type(scope): description`
 
 ### Documentation per issue
 
-**PROGRESS.md** — append:
+If the repository already maintains these files, append concise issue notes:
+
+**PROGRESS.md**
 ```
 ## {{ issue.identifier }}: {{ issue.title }}
 - Status: Completed
@@ -290,7 +341,7 @@ Use conventional commits: `type(scope): description`
 - Screenshot: ![](path/to/verification-screenshot.png)
 ```
 
-**LEARNING.md** — append:
+**LEARNING.md**
 ```
 ## {{ issue.identifier }}: {{ issue.title }}
 - Root cause: (what was actually wrong)
@@ -298,24 +349,9 @@ Use conventional commits: `type(scope): description`
 - Concepts: (specific technical concepts used)
 ```
 
-**README.md** — add screenshot of the fixed feature/component under the relevant section.
-
 ### Verification
-- Start dev server, visually verify
-- Test the user flow from the issue
-- Capture a screenshot of the fixed state
-- Check console for errors
-- Record evidence in Linear workpad
-
-## Project-specific context
-
-Repository: https://github.com/stussysenik/mymind-clone-web.git
-Project: mymind-clone-web
-Workspace: /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
-
-When working on this project:
-- Follow existing code style and conventions found in the repository.
-- Check for CONTRIBUTING.md, README.md, or .github/ documentation for project-specific guidelines.
-- If tests exist, ensure they pass before creating PRs.
-- If CI/CD workflows exist, ensure they pass before moving to `Human Review`.
-- Respect existing directory structure and file organization patterns.
+- Start the dev server when the task changes runtime behavior.
+- Test the user flow described by the issue.
+- Capture a screenshot for UI changes.
+- Check console and server logs for errors.
+- Record validation evidence in the Linear workpad.

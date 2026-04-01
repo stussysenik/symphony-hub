@@ -100,7 +100,7 @@ Symphony will:
 
 The agent will:
 1. Create workspace directory
-2. Clone the GitHub repository
+2. Materialize the project checkout using the configured workspace strategy (`clone` or `worktree`)
 3. Install dependencies
 4. Start working on the task
 5. Post plan to Linear workpad

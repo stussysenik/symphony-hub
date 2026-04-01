@@ -14,48 +14,17 @@ tracker:
     - Duplicate
     - Done
 polling:
-  interval_ms: 5000
+  interval_ms: {{POLLING_INTERVAL_MS}}
 workspace:
   root: {{WORKSPACE_PATH}}
 hooks:
   after_create: |
-    git clone --depth 1 {{GITHUB_URL}} .
-
-    # Auto-detect package manager and install dependencies
-    if [ -f "package.json" ]; then
-      if [ -f "bun.lockb" ]; then
-        bun install
-      elif [ -f "pnpm-lock.yaml" ]; then
-        pnpm install
-      elif [ -f "yarn.lock" ]; then
-        yarn install
-      else
-        npm install
-      fi
-    fi
-
-    # Python projects
-    if [ -f "requirements.txt" ]; then
-      pip install -r requirements.txt
-    elif [ -f "pyproject.toml" ]; then
-      pip install -e .
-    fi
-
-    # Rust projects
-    if [ -f "Cargo.toml" ]; then
-      cargo build
-    fi
-
-    # Go projects
-    if [ -f "go.mod" ]; then
-      go mod download
-    fi
+{{AFTER_CREATE_HOOK}}
   before_remove: |
-    # Cleanup hook - runs before workspace deletion
-    echo "Cleaning up workspace for {{PROJECT_NAME}}"
+{{BEFORE_REMOVE_HOOK}}
 agent:
-  max_concurrent_agents: 2
-  max_turns: 20
+  max_concurrent_agents: {{MAX_CONCURRENT_AGENTS}}
+  max_turns: {{MAX_TURNS}}
 codex:
   command: codex --config shell_environment_policy.inherit=all --config model_reasoning_effort=xhigh --model gpt-5.3-codex app-server
   approval_policy: never
@@ -87,6 +56,13 @@ Description:
 {{ issue.description }}
 {% else %}
 No description provided.
+{% endif %}
+
+{% if has_visual_assets %}
+## Visual Context
+
+{{ visual_asset_count }} screenshot(s) attached. CRITICAL: analyze every image before writing code.
+Compare current UI against screenshots. These are your acceptance criteria.
 {% endif %}
 
 Instructions:
@@ -265,11 +241,21 @@ When a ticket reaches `Merging` state (human approved):
 3. Update the Linear issue to `Done` state.
 4. Add a final workpad note confirming merge SHA and branch cleanup.
 
+## Core Heuristics
+
+- Prefer the smallest diff that fully resolves the issue.
+- Reuse existing abstractions and conventions before adding new structure.
+- Keep runtime, monitoring, and operator ergonomics simple and observable.
+- Record durable findings where the repository already expects them.
+
 ## Project-specific context
 
 Repository: {{GITHUB_URL}}
+Local repo: {{REPO_ROOT}}
 Project: {{PROJECT_NAME}}
 Workspace: {{WORKSPACE_PATH}}
+Workspace strategy: {{WORKSPACE_STRATEGY}}
+Default branch: {{DEFAULT_BRANCH}}
 
 When working on this project:
 - Follow existing code style and conventions found in the repository.
@@ -277,3 +263,6 @@ When working on this project:
 - If tests exist, ensure they pass before creating PRs.
 - If CI/CD workflows exist, ensure they pass before moving to `Human Review`.
 - Respect existing directory structure and file organization patterns.
+- If the repo already contains issue journals such as `PROGRESS.md` or `LEARNING.md`, append a concise note for this ticket.
+
+{{PROJECT_APPENDIX}}

@@ -16,10 +16,21 @@ tracker:
 polling:
   interval_ms: 5000
 workspace:
-  root: /Users/s3nik/Desktop/symphony-setup/workspaces/recap
+  root: /Users/s3nik/Desktop/symphony-hub/workspaces/recap
 hooks:
   after_create: |
-    git clone --depth 1 https://github.com/stussysenik/recap.git .
+    MAIN_REPO="/Users/s3nik/Desktop/recap"
+    WORKSPACE="$(pwd)"
+    ISSUE_ID="$(basename "$WORKSPACE")"
+    BRANCH="feature/${ISSUE_ID}"
+
+    cd "$MAIN_REPO" && git fetch origin
+
+    # Remove the empty workspace dir Symphony created, then replace it with a git worktree.
+    rmdir "$WORKSPACE"
+    git worktree add "$WORKSPACE" -b "$BRANCH" origin/main
+
+    cd "$WORKSPACE"
 
     # Auto-detect package manager and install dependencies
     if [ -f "package.json" ]; then
@@ -51,8 +62,10 @@ hooks:
       go mod download
     fi
   before_remove: |
-    # Cleanup hook - runs before workspace deletion
-    echo "Cleaning up workspace for recap"
+    MAIN_REPO="/Users/s3nik/Desktop/recap"
+    WORKSPACE="$(pwd)"
+    cd "$MAIN_REPO" 2>/dev/null && git worktree remove "$WORKSPACE" --force 2>/dev/null || true
+    git worktree prune 2>/dev/null || true
 agent:
   max_concurrent_agents: 2
   max_turns: 20
@@ -87,6 +100,13 @@ Description:
 {{ issue.description }}
 {% else %}
 No description provided.
+{% endif %}
+
+{% if has_visual_assets %}
+## Visual Context
+
+{{ visual_asset_count }} screenshot(s) attached. CRITICAL: analyze every image before writing code.
+Compare current UI against screenshots. These are your acceptance criteria.
 {% endif %}
 
 Instructions:
@@ -265,11 +285,21 @@ When a ticket reaches `Merging` state (human approved):
 3. Update the Linear issue to `Done` state.
 4. Add a final workpad note confirming merge SHA and branch cleanup.
 
+## Core Heuristics
+
+- Prefer the smallest diff that fully resolves the issue.
+- Reuse existing abstractions and conventions before adding new structure.
+- Keep runtime, monitoring, and operator ergonomics simple and observable.
+- Record durable findings where the repository already expects them.
+
 ## Project-specific context
 
 Repository: https://github.com/stussysenik/recap.git
+Local repo: /Users/s3nik/Desktop/recap
 Project: recap
-Workspace: /Users/s3nik/Desktop/symphony-setup/workspaces/recap
+Workspace: /Users/s3nik/Desktop/symphony-hub/workspaces/recap
+Workspace strategy: worktree
+Default branch: main
 
 When working on this project:
 - Follow existing code style and conventions found in the repository.
@@ -277,3 +307,4 @@ When working on this project:
 - If tests exist, ensure they pass before creating PRs.
 - If CI/CD workflows exist, ensure they pass before moving to `Human Review`.
 - Respect existing directory structure and file organization patterns.
+- If the repo already contains issue journals such as `PROGRESS.md` or `LEARNING.md`, append a concise note for this ticket.

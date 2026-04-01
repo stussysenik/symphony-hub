@@ -51,7 +51,7 @@ Project: Creative Playground
 [10:00:00] You create issue → CRE-42 created
 [10:00:10] You move issue from Triage → Todo
 [10:00:15] Symphony detects new "Todo" issue
-[10:00:18] Agent starts, creates workspace
+[10:00:18] Agent starts, creates workspace checkout
 [10:00:20] Issue state changes: 📋 Todo → ⚡ In Progress
 [10:00:25] Agent posts plan to Linear workpad
 ```
@@ -183,6 +183,36 @@ Agents create PRs automatically, but **YOU** decide when to merge.
 - Verify it matches requirements
 
 **Don't blindly auto-merge.** Agents are good but not perfect.
+
+---
+
+## How To Change The Spec Without Making A Mess
+
+Use this decision rule:
+
+- **Before `Todo`**: edit the issue freely. The ticket is still intake.
+- **`In Progress` + small tweak**: add one clear Linear comment with a `SPEC UPDATE` header and exact delta.
+- **`In Progress` + material scope change**: stop treating it as the same run. Move it back to intake, rewrite it, then re-queue.
+- **`Human Review`**: use PR review comments for fixes to the current implementation. Create a follow-up issue for new scope.
+
+**Good `SPEC UPDATE` comment:**
+
+```md
+SPEC UPDATE
+
+- Keep the current implementation direction
+- Change the empty state copy to "No saved links yet"
+- Add keyboard focus styles to the filter chips
+- Validation: verify tab navigation and visible focus ring
+```
+
+**Not good:**
+
+```md
+Actually maybe rethink this whole thing and make it better
+```
+
+The system works best when one issue stays one coherent unit of work. Minor clarifications are fine. Mission changes should become a re-queue or a new issue.
 
 ---
 

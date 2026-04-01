@@ -1,0 +1,63 @@
+# Docs Map
+
+`symphony-hub` is the operator home for the Symphony control plane.
+
+## Daily Start
+
+Run this first:
+
+```bash
+./launch.sh brief
+```
+
+Use this when resuming from previous work:
+
+```bash
+./launch.sh resume
+```
+
+Those commands are the shortest path to:
+- health status
+- active runtime state
+- topology summary
+- latest checkpoint
+- queue hygiene
+
+## Core Workflow
+
+- [LINEAR-GOLDEN-RULE.md](../LINEAR-GOLDEN-RULE.md): shortest explanation of the Linear + Symphony loop
+- [LINEAR-INTAKE.md](../LINEAR-INTAKE.md): intake setup, templates, archive-first rules, and agent-ready bar
+- [LINEAR-WORKFLOW.md](../LINEAR-WORKFLOW.md): full lifecycle for execution, monitoring, and review
+- [OPERATIONS.md](../OPERATIONS.md): operator runbook, review loop, checkpoints, and release flow
+
+## Architecture And Decisions
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md): system structure and runtime boundaries
+- [DECISIONS.md](./DECISIONS.md): architectural decisions, including archive-first workflow and release strategy
+- [CHECKPOINTS.md](./CHECKPOINTS.md): local handoff and resume model
+- [VISION.md](./VISION.md): multimodal and design-context workflow
+- [RESEARCH.md](./RESEARCH.md): research notes from building on Symphony
+
+## Change Management
+
+- [proposal.md](../openspec/changes/reproducible-operator-foundation/proposal.md): current operator-foundation change proposal
+- [design.md](../openspec/changes/reproducible-operator-foundation/design.md): design for the operator foundation
+- [tasks.md](../openspec/changes/reproducible-operator-foundation/tasks.md): implementation checklist
+
+## Release And Delivery
+
+- `npm run release:dry-run`: local semantic-release dry run
+- `npm run release`: local semantic-release execution
+- `.github/workflows/release.yml`: automated GitHub release flow
+- `CHANGELOG.md`: generated release history
+
+## Board Model
+
+Keep the active human surface small:
+
+- `Inbox`: `Triage`
+- `Ready`: `Todo`
+- `Needs Me`: `Human Review` + `Merging`
+- `Done Recent`: recently landed work
+
+Archive or supersede old paths instead of deleting them.

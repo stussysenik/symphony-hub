@@ -8,6 +8,22 @@ This repo's current orchestration model is:
 
 Important: Symphony still starts agents from `Todo`. Use `Triage` as the inbox, and move an issue to `Todo` only when it is ready for implementation.
 
+## Operating Principles
+
+Design the board for three things at once:
+
+- **Velocity**: work should move quickly once it reaches `Todo`.
+- **Agency**: agents should have enough context and autonomy to execute without constant human steering.
+- **Digital minimalism**: the board should feel calm because views are intentional, not because history was deleted.
+
+Preserve operational history:
+
+- never delete issues that entered the workflow
+- archive or move them out of active views instead
+- keep comments, workpads, PR links, validation notes, and checkpoints as durable evidence
+
+Minimalism should come from clean states, small labels, and focused saved views, not from losing execution history.
+
 ## What to Configure in Linear
 
 ### 1. Enable Triage for the team
@@ -74,6 +90,21 @@ Recommended defaults:
 
 If you already know an issue is implementation-ready, create it directly in `Todo`.
 
+## Archive, Don't Delete
+
+When a ticket is no longer the active path:
+
+- move it to a non-executing state such as `Backlog`, `Cancelled`, or another archive state your team uses
+- add a short closing note explaining why it stopped or changed
+- link any replacement ticket if the work was split or superseded
+
+This keeps the system auditable:
+
+- original intent stays visible
+- spec changes stay traceable
+- failed attempts become learning material
+- operators can reconstruct what happened without guesswork
+
 ## Fast Capture Options
 
 ### Linear-native
@@ -105,6 +136,7 @@ The script uses Linear's supported create-issue URLs and lets you pre-fill:
 Move an intake issue from `Triage` to `Todo` only when:
 
 - the title clearly states the change
+- the issue uses a stable structure such as `Context`, `Problem`, `Desired Outcome`, `Acceptance Criteria`, `Validation`, and `Assets`
 - the description includes the desired outcome
 - attached mockups or screenshots are present if UI work is involved
 - the target project/team is correct
