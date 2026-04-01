@@ -1,3 +1,5 @@
+## [1.1.1](https://github.com/stussysenik/symphony-hub/compare/v1.1.0...v1.1.1) (2026-04-01)
+
 ## [1.1.0](https://github.com/stussysenik/symphony-hub/compare/v1.0.2...v1.1.0) (2026-04-01)
 
 ### Features
