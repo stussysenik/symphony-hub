@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/stussysenik/symphony-hub/compare/v1.0.1...v1.0.2) (2026-04-01)
+
+### Bug Fixes
+
+* **hub:** add archive helper for stale issues ([963a873](https://github.com/stussysenik/symphony-hub/commit/963a873f8529ec742c824b0ae7b244bdb28d6098))
+
 ## [1.0.1](https://github.com/stussysenik/symphony-hub/compare/v1.0.0...v1.0.1) (2026-04-01)
 
 ## 1.0.0 (2026-04-01)
