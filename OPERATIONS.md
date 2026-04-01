@@ -160,6 +160,7 @@ Before starting a new batch, audit the configured projects:
 cd ~/Desktop/symphony-hub
 ./launch.sh audit
 ./launch.sh audit --project mymind-clone-web --stale-hours 12
+./linear-archive.sh --issue CRE-8 --workspace-root ~/Desktop/symphony-setup/workspaces/mymind-clone-web
 ```
 
 Use the report to:
@@ -173,6 +174,10 @@ Preservation-first rule:
 - remove them from active views by state, not by erasing history
 - leave a short note when archiving, superseding, or splitting work
 - preserve PR links, validation evidence, and workpad history for future audits
+
+If a stale ticket only has local runtime evidence left, use `linear-archive.sh`
+to add the archive note and move it out of the active queue without losing the
+workspace path or issue history.
 
 ### Changing spec mid-flight
 

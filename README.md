@@ -40,6 +40,7 @@ These are **new scripts** created specifically for this demo:
 | `watch-events.sh` | ⚡ Event highlighter for logs |
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
+| `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
 | `checkpoint.sh` | 💾 Local checkpoint snapshot for resumable handoffs |
 
 ### Linear Intake Helper
@@ -204,6 +205,7 @@ Use monitoring scripts to watch in real-time:
 ./launch.sh brief                # Startup/resume summary
 ./watch-linear.sh CRE-5          # Watch specific Linear issue
 ./linear-audit.sh                # Audit queues, stale issues, and review gaps
+./linear-archive.sh --issue CRE-8 --workspace-root /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
 ./launch.sh sources              # Print hub/engine/project topology
 ./launch.sh checkpoint pre-review
 ./watch-workspace.sh v0-ipod     # Watch the latest workspace for a project

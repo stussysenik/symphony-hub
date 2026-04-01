@@ -51,6 +51,11 @@ Those commands are the shortest path to:
 - `.github/workflows/release.yml`: automated GitHub release flow
 - `CHANGELOG.md`: generated release history
 
+## Hygiene Helpers
+
+- `./launch.sh audit`: queue hygiene snapshot
+- `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
+
 ## Board Model
 
 Keep the active human surface small:
