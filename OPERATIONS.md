@@ -200,6 +200,10 @@ Use the report to:
 - find active tickets without a `Codex Workpad`
 - identify stale `Todo`, `In Progress`, and `Rework` tickets
 
+The intake compiler is bounded on purpose:
+- it attempts a richer Codex-backed spec compile first
+- if that does not complete quickly enough, it falls back to a deterministic diagnosis draft instead of hanging the operator loop
+
 Preservation-first rule:
 - do not delete workflow tickets to make the board look clean
 - remove them from active views by state, not by erasing history

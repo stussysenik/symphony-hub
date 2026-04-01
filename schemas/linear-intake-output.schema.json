@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "recommended_state",
+    "labels",
+    "operator_summary",
+    "context",
+    "problem",
+    "desired_outcome",
+    "acceptance_criteria",
+    "validation_steps",
+    "assets",
+    "non_goals",
+    "likely_code_locations",
+    "authorizations",
+    "restrictions",
+    "open_questions",
+    "related_issues"
+  ],
+  "properties": {
+    "title": { "type": "string" },
+    "recommended_state": { "type": "string" },
+    "labels": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "operator_summary": { "type": "string" },
+    "context": { "type": "string" },
+    "problem": { "type": "string" },
+    "desired_outcome": { "type": "string" },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "validation_steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "non_goals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "likely_code_locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "authorizations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "restrictions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "related_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identifier", "reason"],
+        "properties": {
+          "identifier": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -150,6 +150,7 @@ What it does:
 - stamps the draft with the project's configured writable paths, restricted paths, and required checks
 - checks for related Linear issues in the same project
 - writes a local report bundle under `intakes/`
+- attempts a richer Codex-backed spec compile first, then falls back to a deterministic diagnosis draft if that compile does not complete in time
 - creates the Linear issue only if you pass `--apply`
 - resolves `Triage` to `Backlog` automatically if the team does not expose a `Triage` state
 
