@@ -105,6 +105,17 @@ symphony-hub/
 └── workspaces/                # Agent work directories (git-ignored)
 ```
 
+### Runtime Boundary
+
+There are two different local runtime surfaces:
+
+- `symphony-hub/` is the canonical operator repository.
+- `symphony-setup/` is a runtime evidence locker from older runs.
+
+Use `symphony-setup` when you need to recover context from preserved
+workspaces or logs, especially for stale Linear issues that never reached a PR.
+Do not treat it as the long-lived documentation or source-code home.
+
 ### Open-AI-Symphony Repository (Modified Files)
 
 ```

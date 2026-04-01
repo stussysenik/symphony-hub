@@ -55,6 +55,7 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
+- `./launch.sh recover --project <name> --root /Users/s3nik/Desktop/symphony-setup/workspaces`: inspect preserved workspaces before revive/archive decisions
 
 ## Board Model
 
@@ -66,3 +67,9 @@ Keep the active human surface small:
 - `Done Recent`: recently landed work
 
 Archive or supersede old paths instead of deleting them.
+
+## Runtime Boundary
+
+- `symphony-hub`: canonical operator repo
+- `symphony-setup`: runtime evidence locker for preserved workspaces and logs
+- product repos: actual implementation targets

@@ -161,6 +161,7 @@ cd ~/Desktop/symphony-hub
 ./launch.sh audit
 ./launch.sh audit --project mymind-clone-web --stale-hours 12
 ./linear-archive.sh --issue CRE-8 --workspace-root ~/Desktop/symphony-setup/workspaces/mymind-clone-web
+./launch.sh recover --project mymind-clone-web --root ~/Desktop/symphony-setup/workspaces --issue CRE-8
 ```
 
 Use the report to:
@@ -178,6 +179,10 @@ Preservation-first rule:
 If a stale ticket only has local runtime evidence left, use `linear-archive.sh`
 to add the archive note and move it out of the active queue without losing the
 workspace path or issue history.
+
+If you need to inspect preserved legacy workspaces before deciding whether to
+revive or supersede a ticket, use `./launch.sh recover` against
+`symphony-setup/workspaces`.
 
 ### Changing spec mid-flight
 

@@ -41,6 +41,7 @@ These are **new scripts** created specifically for this demo:
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
 | `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
+| `workspace-recovery.sh` | 🧰 Inspect preserved workspaces before revive/archive decisions |
 | `checkpoint.sh` | 💾 Local checkpoint snapshot for resumable handoffs |
 
 ### Linear Intake Helper
@@ -60,6 +61,17 @@ These files are part of the Symphony system:
 - `logs/` - Agent logs (generated at runtime)
 - `pids/` - Process IDs (generated at runtime)
 - `workspaces/` - Agent work directories (generated at runtime)
+
+### Legacy Runtime Evidence
+
+`symphony-setup` is still useful, but not as the canonical repo.
+
+Use `/Users/s3nik/Desktop/symphony-setup` as:
+- a preserved runtime workspace root from older runs
+- a log/evidence locker for stale issues
+- a recovery source when Linear tickets need to be archived or superseded without losing context
+
+Use `symphony-hub` as the place where operator code, docs, OpenSpec changes, and release flow live.
 
 ### Go TUI Dashboard
 Terminal-native monitoring built with Go + Charm (bubbletea, bubbles, lipgloss):
@@ -206,6 +218,7 @@ Use monitoring scripts to watch in real-time:
 ./watch-linear.sh CRE-5          # Watch specific Linear issue
 ./linear-audit.sh                # Audit queues, stale issues, and review gaps
 ./linear-archive.sh --issue CRE-8 --workspace-root /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
+./workspace-recovery.sh --project mymind-clone-web --root /Users/s3nik/Desktop/symphony-setup/workspaces
 ./launch.sh sources              # Print hub/engine/project topology
 ./launch.sh checkpoint pre-review
 ./watch-workspace.sh v0-ipod     # Watch the latest workspace for a project
@@ -278,6 +291,10 @@ symphony-hub/
 │   ├── release.config.cjs   # Release channels and plugins
 │   ├── CHANGELOG.md         # Generated changelog
 │   └── .github/workflows/   # GitHub release workflow
+│
+├── Legacy Runtime
+│   └── /Users/s3nik/Desktop/symphony-setup
+│       # Preserved workspaces/logs for recovery and audit
 │
 ├── Configuration
 │   ├── .env.local.example   # Template (committed)

@@ -309,6 +309,10 @@ cmd_checkpoint() {
     exec "${SCRIPT_DIR}/checkpoint.sh" "$@"
 }
 
+cmd_recover() {
+    exec "${SCRIPT_DIR}/workspace-recovery.sh" "$@"
+}
+
 cmd_brief() {
     load_env_if_present
 
@@ -472,6 +476,7 @@ Commands:
   status             Show status of all instances
   logs <project>     Tail logs for a project
   audit [options]    Audit Linear issue hygiene across configured projects
+  recover [options]  Inspect preserved workspaces for recovery decisions
   sources            Show hub/engine/project topology
   brief [options]    Print the operator startup/resume summary
   resume [options]   Alias for brief
@@ -494,6 +499,7 @@ Examples:
   ./launch.sh status             # Show status of all instances
   ./launch.sh logs v0-ipod       # Tail logs for v0-ipod
   ./launch.sh audit              # Review queue hygiene across projects
+  ./launch.sh recover --project mymind-clone-web
   ./launch.sh sources            # Print hub/engine/project topology
   ./launch.sh brief              # Print the startup/resume summary
   ./launch.sh resume             # Same as brief
@@ -544,6 +550,9 @@ main() {
             ;;
         audit)
             cmd_audit "$@"
+            ;;
+        recover)
+            cmd_recover "$@"
             ;;
         sources)
             cmd_sources "$@"
