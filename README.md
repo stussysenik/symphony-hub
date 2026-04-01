@@ -41,6 +41,7 @@ These are **new scripts** created specifically for this demo:
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
 | `linear-intake.sh` | 📝 Draft a structured Linear intake issue from a raw prompt |
+| `linear-issuefmt.sh` | 🧾 Canonical formatter and `Todo`-readiness linter for Linear issue bodies |
 | `linear-diagnose.sh` | 🔎 Diagnose an existing Linear issue against current repo state |
 | `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
 | `workspace-recovery.sh` | 🧰 Inspect preserved workspaces before revive/archive decisions |
@@ -114,6 +115,8 @@ See `docs/VISION.md` for the full guide.
 - `LINEAR-WORKFLOW.md` - Complete Linear integration guide
 - `MONITORING-README.md` - Monitoring tools reference
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
+- `issue-signature.yml` - Canonical issue signature and `Todo` gate
+- `issue_signature.py` - Shared formatter/evaluator used by intake, audit, diagnose, and issuefmt
 - `docs/CHECKPOINTS.md` - Local snapshot and handoff workflow
 - `docs/RESEARCH.md` - What we learned from Symphony
 - `docs/DECISIONS.md` - Why we built Hub this way
@@ -172,6 +175,13 @@ Use `symphony-hub` as the operator home going forward.
 - latest checkpoint summary
 - Linear queue hygiene
 
+Use `issuefmt` when you want the hub to canonicalize an issue body before it
+becomes execution work:
+
+```bash
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
+```
+
 ---
 
 ## How It Works
@@ -184,9 +194,10 @@ Symphony watches your Linear project for new issues. To start an agent:
    - Recommended: create it in `Triage` from a template and let Linear help route it
    - Faster intake path: use `./launch.sh intake --project ... --prompt "..."` to draft a `Triage` issue from a raw request plus repo diagnosis
    - Existing issue diagnosis path: use `./launch.sh diagnose --project ... --issue CRE-123` to investigate an existing issue against current repo state, then add `--apply` to write the diagnosis comment and safe state change
+   - Canonical formatting path: use `./launch.sh issuefmt --project ... --issue CRE-123` to normalize the issue body into the required signature before promoting it
    - If the team does not expose `Triage`, the intake helper falls back to `Backlog` instead of creating executable work
-   - Fast path: create it directly in `Todo` if it is already implementation-ready
-2. **Move the issue to `Todo`** when you want Symphony to pick it up
+   - Fast path: create it directly in `Todo` only if it already passes the issue signature gate
+2. **Move the issue to `Todo`** only after the signature gate is clean
 3. **Symphony detects it** (polls every few seconds)
 4. **Agent starts automatically** - Creates a per-issue workspace checkout using the configured strategy (`clone` or `worktree`), then begins work
 
@@ -225,6 +236,7 @@ Use monitoring scripts to watch in real-time:
 ./linear-audit.sh                # Audit queues, stale issues, and review gaps
 ./launch.sh intake --project mymind-clone-web --prompt "Investigate search shell focus polish"
 ./launch.sh diagnose --project mymind-clone-web --issue CRE-123
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
 ./linear-archive.sh --issue CRE-8 --workspace-root /Users/s3nik/Desktop/symphony-setup/workspaces/mymind-clone-web
 ./workspace-recovery.sh --project mymind-clone-web --root /Users/s3nik/Desktop/symphony-setup/workspaces
 ./launch.sh sources              # Print hub/engine/project topology

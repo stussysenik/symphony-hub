@@ -74,6 +74,7 @@ Pick your preferred surface:
 | Startup or resume brief | `./launch.sh brief` |
 | Queue hygiene audit | `./launch.sh audit` |
 | Diagnosis-first intake draft | `./launch.sh intake --project mymind-clone-web --prompt "..."` |
+| Canonical issue formatting / lint | `./launch.sh issuefmt --project mymind-clone-web --issue CRE-123` |
 | Existing-issue diagnosis | `./launch.sh diagnose --project mymind-clone-web --issue CRE-123` |
 | Source topology | `./launch.sh sources` |
 | Save resumable checkpoint | `./launch.sh checkpoint pre-review` |
@@ -200,6 +201,7 @@ Use the report to:
 - spot `Human Review` or `Merging` issues missing PR attachments
 - find active tickets without a `Codex Workpad`
 - identify stale `Todo`, `In Progress`, and `Rework` tickets
+- identify `Todo` tickets that still fail the canonical issue signature
 
 The intake compiler is bounded on purpose:
 - it attempts a richer Codex-backed spec compile first
@@ -254,6 +256,18 @@ The first command previews the diagnosis and writes a local bundle under
 the suggested safe queue state change. This is the command to use when you want
 the system to tell you whether the issue is already implemented on `main`,
 needs rewrite, or is ready to return to `Todo`.
+
+When the issue exists but the body itself is still sloppy or inconsistent, use:
+
+```bash
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123 --apply
+```
+
+This is the canonical body normalizer. It preserves the managed intake block,
+keeps extra sections instead of deleting them, and makes the `Todo` gate
+explicit. `audit` uses the same signature contract, so bad `Todo` bodies become
+visible immediately.
 
 ### Changing spec mid-flight
 

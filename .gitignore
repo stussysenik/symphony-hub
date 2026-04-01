@@ -27,6 +27,8 @@ node_modules/
 *.tmp
 *.swp
 *~
+__pycache__/
+*.pyc
 
 # Go binary
 tui/tui

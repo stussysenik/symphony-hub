@@ -35,6 +35,7 @@ Those commands are the shortest path to:
 - [ARCHITECTURE.md](./ARCHITECTURE.md): system structure and runtime boundaries
 - [DECISIONS.md](./DECISIONS.md): architectural decisions, including archive-first workflow and release strategy
 - [CHECKPOINTS.md](./CHECKPOINTS.md): local handoff and resume model
+- [ISSUE-SIGNATURE.md](./ISSUE-SIGNATURE.md): canonical Linear issue structure and formatter/linter behavior
 - [VISION.md](./VISION.md): multimodal and design-context workflow
 - [RESEARCH.md](./RESEARCH.md): research notes from building on Symphony
 
@@ -49,6 +50,9 @@ Those commands are the shortest path to:
 - [proposal.md](../openspec/changes/existing-issue-diagnosis-loop/proposal.md): existing-issue diagnosis proposal
 - [design.md](../openspec/changes/existing-issue-diagnosis-loop/design.md): diagnosis loop design and guardrails
 - [tasks.md](../openspec/changes/existing-issue-diagnosis-loop/tasks.md): diagnosis implementation checklist
+- [proposal.md](../openspec/changes/canonical-issue-signature/proposal.md): canonical issue signature proposal
+- [design.md](../openspec/changes/canonical-issue-signature/design.md): issue signature and `Todo` gate design
+- [tasks.md](../openspec/changes/canonical-issue-signature/tasks.md): issue signature implementation checklist
 
 ## Release And Delivery
 
@@ -61,6 +65,7 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
+- `./launch.sh issuefmt --project <name> --issue <ID>`: canonicalize and lint an existing Linear issue body
 - `./launch.sh diagnose --project <name> --issue <ID>`: diagnose an existing issue against current repo state
 - `./launch.sh diagnose --project <name> --issue <ID> --apply`: write the diagnosis comment and suggested safe state change
 - `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
@@ -76,6 +81,8 @@ Keep the active human surface small:
 - `Done Recent`: recently landed work
 
 Archive or supersede old paths instead of deleting them.
+
+Move work into `Ready` only after `issuefmt` says the signature is clean.
 
 ## Runtime Boundary
 

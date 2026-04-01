@@ -19,6 +19,7 @@ if [ -z "${LINEAR_API_KEY:-}" ]; then
     exit 1
 fi
 
+export CONFIG_FILE SCRIPT_DIR
 CONFIG_FILE="${CONFIG_FILE}" python3 - "$@" <<'PYTHON_SCRIPT'
 import argparse
 import json
@@ -30,6 +31,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+from issue_signature import evaluate_issue_body, load_signature
 
 LINEAR_API_URL = "https://api.linear.app/graphql"
 ACTIVE_STATES = {"Todo", "In Progress", "Rework", "Human Review", "Merging"}
@@ -47,6 +51,7 @@ query($projectId: String!, $first: Int!, $after: String) {
       nodes {
         identifier
         title
+        description
         url
         updatedAt
         state { name type }
@@ -139,11 +144,12 @@ def has_pr_attachment(issue: dict) -> bool:
     return any("/pull/" in (attachment.get("url") or "") for attachment in attachments)
 
 
-def summarize_issue(issue: dict, stale_hours: float) -> dict:
+def summarize_issue(issue: dict, stale_hours: float, signature: dict) -> dict:
     updated_at = parse_timestamp(issue["updatedAt"])
     age_hours = round((datetime.now(timezone.utc) - updated_at).total_seconds() / 3600, 1)
     state = issue["state"]["name"]
     attention: list[str] = []
+    signature_report = evaluate_issue_body(issue.get("description") or "", signature)
 
     if state in ACTIVE_STATES and age_hours >= stale_hours:
         attention.append(f"stale>{stale_hours:g}h")
@@ -153,6 +159,10 @@ def summarize_issue(issue: dict, stale_hours: float) -> dict:
         attention.append("missing-pr")
     if state == "Todo" and age_hours >= stale_hours:
         attention.append(f"queued>{stale_hours:g}h")
+    if state == "Todo" and not signature_report["readyForTodo"]:
+        attention.append("todo-unready-signature")
+    if state == "Todo" and signature_report["needsFormatting"]:
+        attention.append("todo-needs-format")
 
     return {
         "identifier": issue["identifier"],
@@ -165,6 +175,7 @@ def summarize_issue(issue: dict, stale_hours: float) -> dict:
         "labels": [label["name"] for label in issue.get("labels", {}).get("nodes", [])],
         "hasWorkpad": has_workpad(issue),
         "hasPRAttachment": has_pr_attachment(issue),
+        "signature": {key: value for key, value in signature_report.items() if key != "formattedBody"},
         "attention": attention,
     }
 
@@ -191,7 +202,13 @@ def terminal_report(project_reports: list[dict], stale_hours: float) -> str:
             lines.append("  Needs attention:")
             for issue in report["needsAttention"]:
                 tags = ", ".join(issue["attention"])
-                lines.append(f"    - {issue['identifier']} [{issue['state']}] {issue['title']} ({issue['ageHours']}h, {tags})")
+                signature_parts = []
+                if issue["signature"]["summary"] != "ready":
+                    signature_parts.append(f"signature: {issue['signature']['summary']}")
+                if issue["signature"]["needsFormatting"]:
+                    signature_parts.append("canonical formatting drift")
+                suffix = f"; {'; '.join(signature_parts)}" if signature_parts else ""
+                lines.append(f"    - {issue['identifier']} [{issue['state']}] {issue['title']} ({issue['ageHours']}h, {tags}{suffix})")
         else:
             lines.append("  Needs attention: none")
 
@@ -217,6 +234,7 @@ def main() -> int:
     config = load_config(Path(os.environ["CONFIG_FILE"]))
     api_key = os.environ["LINEAR_API_KEY"]
     requested_states = set(args.states or [])
+    signature = load_signature(Path(os.environ["SCRIPT_DIR"]) / "issue-signature.yml")
 
     configured_projects = config["projects"]
     if args.project:
@@ -228,7 +246,7 @@ def main() -> int:
 
     for project in configured_projects:
         linear_name, raw_issues = fetch_project_issues(project["linear_project_slug"], api_key)
-        summarized = [summarize_issue(issue, args.stale_hours) for issue in raw_issues]
+        summarized = [summarize_issue(issue, args.stale_hours, signature) for issue in raw_issues]
         summarized = filter_issues(summarized, requested_states)
         counts = Counter(issue["state"] for issue in summarized)
         needs_attention = [issue for issue in summarized if issue["attention"]]

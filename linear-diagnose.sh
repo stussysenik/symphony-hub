@@ -33,6 +33,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+from issue_signature import evaluate_issue_body, load_signature
+
 LINEAR_API_URL = "https://api.linear.app/graphql"
 DEFAULT_REPORT_ROOT = Path(os.environ["SCRIPT_DIR"]) / "diagnoses"
 DEFAULT_STATES = ["Todo", "Backlog"]
@@ -336,7 +339,20 @@ def feature_match(issue: dict, evidence_paths: list[str]) -> tuple[str | None, s
     return None, None
 
 
-def fallback_diagnosis(issue: dict, intake_output: dict, stale_hours: float) -> dict:
+def signature_summary(signature_review: dict) -> str:
+    parts = []
+    if signature_review["missingRequired"]:
+        parts.append("missing " + ", ".join(signature_review["missingRequired"]))
+    if signature_review["placeholderSections"]:
+        parts.append("placeholders in " + ", ".join(signature_review["placeholderSections"]))
+    if signature_review["invalidChecklistSections"]:
+        parts.append("checklists in " + ", ".join(signature_review["invalidChecklistSections"]))
+    if signature_review["needsFormatting"]:
+        parts.append("canonical formatting drift")
+    return "; ".join(parts) or "ready"
+
+
+def fallback_diagnosis(issue: dict, intake_output: dict, stale_hours: float, signature_review: dict) -> dict:
     current_state = issue["state"]["name"]
     age_hours = round((datetime.now(timezone.utc) - parse_timestamp(issue["updatedAt"])).total_seconds() / 3600, 1)
     evidence_hits = intake_output["diagnosis"]["codeEvidence"]
@@ -353,11 +369,21 @@ def fallback_diagnosis(issue: dict, intake_output: dict, stale_hours: float) -> 
         suggested_state = "Backlog" if current_state == "Todo" else current_state
         confidence = "medium"
         rationale.append(matched_reason)
+    elif current_state == "Todo" and not signature_review["readyForTodo"]:
+        decision = "rewrite_in_backlog"
+        suggested_state = "Backlog"
+        confidence = "high"
+        rationale.append(f"The issue is in Todo but not agent-ready: {signature_summary(signature_review)}.")
     elif current_state == "Todo" and age_hours >= stale_hours and not workpad:
         decision = "rewrite_in_backlog"
         suggested_state = "Backlog"
         confidence = "medium"
         rationale.append("The issue is stale in Todo and has no execution trail or workpad history.")
+    elif current_state == "Backlog" and signature_review["readyForTodo"]:
+        decision = "ready_for_todo"
+        suggested_state = "Todo"
+        confidence = "medium"
+        rationale.append("The issue already matches the agent-ready signature and can move to Todo if the operator still wants this work.")
     elif current_state == "Backlog":
         decision = "keep_backlog"
         suggested_state = "Backlog"
@@ -392,7 +418,7 @@ def fallback_diagnosis(issue: dict, intake_output: dict, stale_hours: float) -> 
     }
 
 
-def build_prompt(project: dict, issue: dict, intake_output: dict, stale_hours: float) -> str:
+def build_prompt(project: dict, issue: dict, intake_output: dict, stale_hours: float, signature_review: dict) -> str:
     diagnosis = intake_output["diagnosis"]["gitDiagnosis"]
     age_hours = round((datetime.now(timezone.utc) - parse_timestamp(issue["updatedAt"])).total_seconds() / 3600, 1)
     description = strip_markdown_noise(issue.get("description") or "") or "(empty)"
@@ -447,11 +473,18 @@ def build_prompt(project: dict, issue: dict, intake_output: dict, stale_hours: f
             f"- Assignee: {(issue.get('assignee') or {}).get('name') or 'unassigned'}",
             f"- Has workpad: {'yes' if has_workpad(issue) else 'no'}",
             f"- Comment count: {len(comments)}",
+            f"- Signature readiness: {'ready' if signature_review['readyForTodo'] else 'not ready'}",
             "Description:",
             description[:3500],
             "",
             "Attachments:",
             *attachment_lines,
+            "",
+            "Issue signature review:",
+            f"- Missing required sections: {', '.join(signature_review['missingRequired']) or 'none'}",
+            f"- Placeholder sections: {', '.join(signature_review['placeholderSections']) or 'none'}",
+            f"- Invalid checklists: {', '.join(signature_review['invalidChecklistSections']) or 'none'}",
+            f"- Needs formatting: {'yes' if signature_review['needsFormatting'] else 'no'}",
             "",
             "Repo diagnosis:",
             f"- Current branch: {diagnosis.get('currentBranch') or 'detached HEAD'}",
@@ -482,7 +515,7 @@ def build_prompt(project: dict, issue: dict, intake_output: dict, stale_hours: f
     )
 
 
-def build_comment(issue: dict, diagnosis_result: dict, report_dir: Path) -> str:
+def build_comment(issue: dict, diagnosis_result: dict, report_dir: Path, signature_review: dict) -> str:
     lines = [
         "## Diagnosis Review",
         "",
@@ -498,6 +531,13 @@ def build_comment(issue: dict, diagnosis_result: dict, report_dir: Path) -> str:
         "",
         "### Evidence",
         *[f"- {item}" for item in diagnosis_result.get("evidence", [])],
+        "",
+        "### Issue Signature",
+        f"- Ready for Todo: {'yes' if signature_review['readyForTodo'] else 'no'}",
+        f"- Missing required sections: {', '.join(signature_review['missingRequired']) or 'none'}",
+        f"- Placeholder sections: {', '.join(signature_review['placeholderSections']) or 'none'}",
+        f"- Invalid checklists: {', '.join(signature_review['invalidChecklistSections']) or 'none'}",
+        f"- Needs formatting: {'yes' if signature_review['needsFormatting'] else 'no'}",
     ]
     follow_up_title = diagnosis_result.get("follow_up_title", "").strip()
     follow_up_prompt = diagnosis_result.get("follow_up_prompt", "").strip()
@@ -618,26 +658,28 @@ def main() -> int:
     run_dir = create_run_dir(report_dir, project["name"])
 
     schema_path = Path(os.environ["SCRIPT_DIR"]) / "schemas" / "linear-diagnose-output.schema.json"
+    signature = load_signature(Path(os.environ["SCRIPT_DIR"]) / "issue-signature.yml")
     team_states = project_context["team"].get("states", {}).get("nodes", [])
     results = []
 
     for issue in target_issues:
         issue_dir = run_dir / issue["identifier"]
         intake_output = run_intake(issue, project["name"], issue_dir / "intakes")
+        signature_review = evaluate_issue_body(issue.get("description") or "", signature)
         try:
             diagnosis_result = compile_with_codex(
                 schema_path=schema_path,
-                prompt=build_prompt(project, issue, intake_output, args.stale_hours),
+                prompt=build_prompt(project, issue, intake_output, args.stale_hours, signature_review),
                 model=args.model,
             )
             if not validate_payload(diagnosis_result):
                 raise ValueError("Codex returned an incomplete diagnosis payload.")
             compile_mode = "codex"
         except (TimeoutError, ValueError, RuntimeError):
-            diagnosis_result = fallback_diagnosis(issue, intake_output, args.stale_hours)
+            diagnosis_result = fallback_diagnosis(issue, intake_output, args.stale_hours, signature_review)
             compile_mode = "fallback"
 
-        comment = build_comment(issue, diagnosis_result, issue_dir)
+        comment = build_comment(issue, diagnosis_result, issue_dir, signature_review)
         apply_result = None
         resolved_state = diagnosis_result["suggested_state"]
         if args.apply:
@@ -648,7 +690,18 @@ def main() -> int:
             else:
                 apply_result = {"commented": True, "stateChanged": False, "resolvedState": resolved_state}
 
-        write_issue_bundle(issue_dir, issue, intake_output, {**diagnosis_result, "compile_mode": compile_mode}, comment, apply_result)
+        write_issue_bundle(
+            issue_dir,
+            issue,
+            intake_output,
+            {
+                **diagnosis_result,
+                "compile_mode": compile_mode,
+                "issue_signature": {key: value for key, value in signature_review.items() if key != "formattedBody"},
+            },
+            comment,
+            apply_result,
+        )
 
         results.append(
             {
@@ -662,6 +715,7 @@ def main() -> int:
                 "followUpTitle": diagnosis_result.get("follow_up_title", ""),
                 "followUpPrompt": diagnosis_result.get("follow_up_prompt", ""),
                 "evidence": diagnosis_result.get("evidence", []),
+                "issueSignature": {key: value for key, value in signature_review.items() if key != "formattedBody"},
                 "compileMode": compile_mode,
                 "reportDir": str(issue_dir),
                 "applied": apply_result,

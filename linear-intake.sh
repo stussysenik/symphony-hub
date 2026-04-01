@@ -14,7 +14,19 @@ if [ -f "${ENV_FILE}" ]; then
     set +a
 fi
 
-export CONFIG_FILE SCRIPT_DIR
+STDIN_CAPTURE=""
+cleanup() {
+    if [ -n "${STDIN_CAPTURE}" ] && [ -f "${STDIN_CAPTURE}" ]; then
+        rm -f "${STDIN_CAPTURE}"
+    fi
+}
+if [ ! -t 0 ]; then
+    STDIN_CAPTURE="$(mktemp)"
+    cat > "${STDIN_CAPTURE}"
+    trap cleanup EXIT
+fi
+
+export CONFIG_FILE SCRIPT_DIR STDIN_CAPTURE
 python3 - "$@" <<'PYTHON_SCRIPT'
 from __future__ import annotations
 
@@ -34,14 +46,17 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+from issue_signature import get_managed_block_markers, load_signature, render_signature_sections, upsert_managed_block as signature_upsert_managed_block
+
 LINEAR_API_URL = "https://api.linear.app/graphql"
 DEFAULT_REPORT_ROOT = Path(os.environ["SCRIPT_DIR"]) / "intakes"
 DEFAULT_CONTEXT_ISSUES = 12
 DEFAULT_CREATE_STATE = "Triage"
 DEFAULT_CODEX_MODEL = "gpt-5.4-mini"
 DEFAULT_CODEX_TIMEOUT_SECONDS = 20
-MANAGED_BLOCK_START = "<!-- symphony:intake:start -->"
-MANAGED_BLOCK_END = "<!-- symphony:intake:end -->"
+SIGNATURE = load_signature(Path(os.environ["SCRIPT_DIR"]) / "issue-signature.yml")
+MANAGED_BLOCK_START, MANAGED_BLOCK_END = get_managed_block_markers(SIGNATURE, "intake")
 STOPWORDS = {
     "about", "after", "again", "against", "agent", "agents", "also", "always",
     "and", "another", "around", "because", "before", "being", "board", "both",
@@ -264,8 +279,9 @@ def load_task(args: argparse.Namespace) -> str:
         return args.task_legacy.strip()
     if args.task_file_legacy:
         return Path(args.task_file_legacy).read_text(encoding="utf-8").strip()
-    if not sys.stdin.isatty():
-        return sys.stdin.read().strip()
+    stdin_capture = os.environ.get("STDIN_CAPTURE", "").strip()
+    if stdin_capture:
+        return Path(stdin_capture).read_text(encoding="utf-8").strip()
     raise SystemExit("Provide --task, --task-file, or pipe task text on stdin.")
 
 
@@ -948,41 +964,25 @@ def build_managed_block(*, task: str, project: dict, diagnosis: dict, evidence: 
 
 
 def render_spec_sections(*, task: str, compiled: dict, report_dir: Path) -> str:
-    sections = [
-        "## Context",
-        compiled["context"].strip(),
-        "",
-        "## Problem",
-        compiled["problem"].strip(),
-        "",
-        "## Desired Outcome",
-        compiled["desired_outcome"].strip(),
-        "",
-        "## Acceptance Criteria",
-        *render_checkbox_items(compiled.get("acceptance_criteria", [])),
-        "",
-        "## Validation",
-        *render_checkbox_items(compiled.get("validation_steps", [])),
-        "",
-        "## Assets",
-        *render_bullet_items(
-            unique_items(
+    return render_signature_sections(
+        {
+            "context": compiled["context"].strip(),
+            "problem": compiled["problem"].strip(),
+            "desired_outcome": compiled["desired_outcome"].strip(),
+            "acceptance_criteria": compiled.get("acceptance_criteria", []),
+            "validation": compiled.get("validation_steps", []),
+            "assets": unique_items(
                 [
                     f"Original task: {task}",
                     f"Intake report bundle: `{report_dir}`",
                     *compiled.get("assets", []),
                 ]
             ),
-            empty_fallback=f"Intake report bundle: `{report_dir}`",
-        ),
-        "",
-        "## Non-Goals",
-        *render_bullet_items(compiled.get("non_goals", []), empty_fallback="No explicit non-goals were captured yet."),
-        "",
-        "## Open Questions",
-        *render_bullet_items(compiled.get("open_questions", []), empty_fallback="None. Review and move to `Todo` only when the operator agrees."),
-    ]
-    return "\n".join(sections).rstrip() + "\n"
+            "non_goals": compiled.get("non_goals", []),
+            "open_questions": compiled.get("open_questions", []),
+        },
+        SIGNATURE,
+    )
 
 
 def render_description(*, task: str, project: dict, diagnosis: dict, evidence: list[dict], auth_signals: list[dict], compiled: dict, related_issues: list[dict], report_dir: Path, existing_issue: dict | None, requested_state: str) -> str:
@@ -1003,18 +1003,7 @@ def render_description(*, task: str, project: dict, diagnosis: dict, evidence: l
 
 
 def upsert_managed_block(existing_description: str, managed_block: str) -> str:
-    body = existing_description or ""
-    pattern = re.compile(
-        re.escape(MANAGED_BLOCK_START) + r".*?" + re.escape(MANAGED_BLOCK_END),
-        re.DOTALL,
-    )
-    if pattern.search(body):
-        updated = pattern.sub(managed_block.rstrip(), body, count=1)
-    elif body.strip():
-        updated = managed_block.rstrip() + "\n\n" + body.strip() + "\n"
-    else:
-        updated = managed_block
-    return updated.rstrip() + "\n"
+    return signature_upsert_managed_block(existing_description, managed_block, SIGNATURE)
 
 
 def write_report_bundle(report_root: Path, slug: str, payload: dict, draft: str, task: str, compiled: dict) -> Path:

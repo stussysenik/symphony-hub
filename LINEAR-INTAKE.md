@@ -8,6 +8,8 @@ This repo's current orchestration model is:
 
 Important: Symphony still starts agents from `Todo`. Use `Triage` as the inbox, and move an issue to `Todo` only when it is ready for implementation.
 
+The canonical issue signature is defined in [`issue-signature.yml`](issue-signature.yml) and enforced through [`linear-issuefmt.sh`](linear-issuefmt.sh).
+
 ## Operating Principles
 
 Design the board for three things at once:
@@ -173,6 +175,17 @@ Use `diagnose` when the issue already exists and the operator question is:
 "is this implemented, stale, too vague, or ready to re-queue?" Use `intake`
 when the work still starts as a raw request and needs to become a clean issue.
 
+When an existing issue needs structural cleanup before execution, use:
+
+```bash
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
+./launch.sh issuefmt --project mymind-clone-web --issue CRE-123 --apply
+```
+
+The first command previews the canonical body and `Todo` readiness. Adding
+`--apply` rewrites the issue description in Linear without deleting any
+additional sections.
+
 If the requested state does not exist on the team yet, the command prints the
 resolved fallback state. In the current board shape, asking for `Triage` may
 resolve to `Backlog` until Triage is enabled in Linear.
@@ -182,10 +195,15 @@ resolve to `Backlog` until Triage is enabled in Linear.
 Move an intake issue from `Triage` to `Todo` only when:
 
 - the title clearly states the change
-- the issue uses a stable structure such as `Context`, `Problem`, `Desired Outcome`, `Acceptance Criteria`, `Validation`, and `Assets`
+- the issue passes the canonical signature gate with `Context`, `Problem`, `Desired Outcome`, `Acceptance Criteria`, `Validation`, and `Assets`
 - the description includes the desired outcome
 - attached mockups or screenshots are present if UI work is involved
 - the target project/team is correct
+
+Operational note:
+
+- `./launch.sh audit` now flags `todo-unready-signature` when a `Todo` issue is structurally incomplete
+- `./launch.sh audit` now flags `todo-needs-format` when a `Todo` issue is semantically ready but not in canonical order/style
 
 ## References
 

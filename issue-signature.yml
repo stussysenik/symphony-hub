@@ -1,0 +1,101 @@
+version: 1
+managed_blocks:
+  - name: intake
+    start: "<!-- symphony:intake:start -->"
+    end: "<!-- symphony:intake:end -->"
+todo_gate:
+  required_sections:
+    - context
+    - problem
+    - desired_outcome
+    - acceptance_criteria
+    - validation
+    - assets
+sections:
+  - id: context
+    title: Context
+    required: true
+    kind: text
+    aliases:
+      - Background
+    placeholder_lines:
+      - "_Required: explain what this touches and why it matters before moving to `Todo`._"
+  - id: problem
+    title: Problem
+    required: true
+    kind: text
+    aliases:
+      - Current Problem
+      - Issue
+    placeholder_lines:
+      - "_Required: describe the current gap or defect without jumping straight to the solution._"
+  - id: desired_outcome
+    title: Desired Outcome
+    required: true
+    kind: text
+    aliases:
+      - Desired outcome
+      - Outcome
+      - Goal
+    placeholder_lines:
+      - "_Required: describe the user-visible or system-visible result that should be true when this is done._"
+  - id: acceptance_criteria
+    title: Acceptance Criteria
+    required: true
+    kind: checklist
+    min_items: 1
+    aliases:
+      - Acceptance criteria
+      - Success Criteria
+      - Success criteria
+    placeholder_lines:
+      - "- [ ] Replace this placeholder with an observable acceptance criterion."
+  - id: validation
+    title: Validation
+    required: true
+    kind: checklist
+    min_items: 1
+    aliases:
+      - Validation Plan
+      - Validation plan
+      - Test Plan
+      - Verification
+    placeholder_lines:
+      - "- [ ] Replace this placeholder with a concrete manual check, automated test, or review step."
+  - id: assets
+    title: Assets
+    required: true
+    kind: bullets
+    aliases:
+      - Assets / Links
+      - Assets / links
+      - Links
+      - References
+    placeholder_lines:
+      - "- Add screenshots, links, related issues, or note that the diagnosis bundle is sufficient."
+  - id: non_goals
+    title: Non-Goals
+    required: false
+    kind: bullets
+    aliases:
+      - Non Goals
+    placeholder_lines:
+      - "- No explicit non-goals recorded yet."
+  - id: risks_notes
+    title: Risks / Notes
+    required: false
+    kind: bullets
+    aliases:
+      - Risks
+      - Notes
+      - Risks/Notes
+    placeholder_lines:
+      - "- No additional risks or notes recorded yet."
+  - id: open_questions
+    title: Open Questions
+    required: false
+    kind: bullets
+    aliases:
+      - Questions
+    placeholder_lines:
+      - "- No open questions recorded yet."

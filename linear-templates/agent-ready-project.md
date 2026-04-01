@@ -7,6 +7,10 @@ This template is intentionally richer than the basic `feature-request` or
 `bug-report` forms. It is meant for work that should move from `Triage` or
 `Backlog` into `Todo` and then run cleanly through the Symphony loop.
 
+If you retrofit an older issue into this shape, run
+`./launch.sh issuefmt --project <name> --issue <ID>` before moving it to
+`Todo`.
+
 ## Recommended form fields
 
 - `Title` (property field, required)
@@ -15,7 +19,7 @@ This template is intentionally richer than the basic `feature-request` or
 - `Desired outcome` (long text, required)
 - `Acceptance criteria` (long text, required)
 - `Validation plan` (long text, required)
-- `Assets / links` (long text, optional)
+- `Assets / links` (long text, required for `Todo`)
 - `Surface area` (dropdown: frontend, backend, infra, design, mobile, cross-product)
 - `Type` (dropdown: feature, bug, debt, research)
 

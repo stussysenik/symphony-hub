@@ -8,6 +8,10 @@ Each template file includes:
 - recommended default properties
 - a description body you can paste into the template
 
+The canonical issue contract is defined in [`../issue-signature.yml`](../issue-signature.yml).
+Use these templates to start close to that shape, then run
+`./launch.sh issuefmt --project <name> --issue <ID>` before moving work to `Todo`.
+
 Recommended template set:
 
 - [`bug-report.md`](bug-report.md)
@@ -22,3 +26,4 @@ For Symphony-driven teams:
 - use `Todo` as the execution trigger
 - keep labels minimal and consistent
 - use `agent-ready-project.md` when you want the Linear issue itself to be the full execution spec
+- run `./launch.sh issuefmt --project <name> --issue <ID>` before moving fuzzy existing issues to `Todo`

@@ -220,6 +220,28 @@ Existing-issue diagnosis reuses the same repo/evidence path, but starts from a
 live Linear ticket and writes a local bundle under `diagnoses/` before
 optionally commenting and applying a safe queue-state change.
 
+The issue body itself is a separate control-plane artifact:
+
+```
+               Existing Linear Issue
+                       │
+                       ▼
+               ┌─────────────┐
+               │ issuefmt     │─── canonical heading order
+               └──────┬──────┘    placeholder injection for missing required sections
+                      │
+                      ▼
+               ┌─────────────┐
+               │ Todo Gate    │─── Context / Problem / Desired Outcome
+               └──────┬──────┘    Acceptance Criteria / Validation / Assets
+                      │
+                      ▼
+               ┌─────────────┐
+               │ audit +      │─── flags todo-unready-signature
+               │ diagnose     │    and todo-needs-format
+               └─────────────┘
+```
+
 ### Vision: Asset Collection and Multimodal Input
 
 ```
