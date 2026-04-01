@@ -1,3 +1,14 @@
+## 1.0.0 (2026-04-01)
+
+### Features
+
+* **figma:** add Figma MCP server configuration ([87963b2](https://github.com/stussysenik/symphony-hub/commit/87963b216aa0c15f0170ec8bf19116c03dee9e1a))
+* **hub:** add operator foundation and release spine ([e00a892](https://github.com/stussysenik/symphony-hub/commit/e00a892cd6953dc3e4175719d692d2b5cd5ba75f))
+* **tui:** add issue, agent, event, and project components ([66f8145](https://github.com/stussysenik/symphony-hub/commit/66f814597b4f7c944b21d4a7d973838f08810652))
+* **tui:** add keyboard nav, themes, help overlay, and Makefile ([8d2f613](https://github.com/stussysenik/symphony-hub/commit/8d2f6130e8105f4d37c965b7d8b1be776064526d))
+* **tui:** add Linear API client, log parser, and auto-refresh ([51c3750](https://github.com/stussysenik/symphony-hub/commit/51c3750faee0a34c04b04e444111129aefb513e6))
+* **tui:** scaffold Go TUI with bubbletea, bubbles, lipgloss ([d1fa518](https://github.com/stussysenik/symphony-hub/commit/d1fa518fee2d9a533f6f8dac9c6f90ac822da2ef))
+
 # Changelog
 
 All notable `symphony-hub` releases are tracked here by semantic-release.
