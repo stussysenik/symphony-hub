@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/stussysenik/symphony-hub/compare/v1.0.2...v1.1.0) (2026-04-01)
+
+### Features
+
+* **ops:** add workspace recovery surface ([be8dc63](https://github.com/stussysenik/symphony-hub/commit/be8dc639e66710519d6fc7aaf5af3e40ffabc020))
+
 ## [1.0.2](https://github.com/stussysenik/symphony-hub/compare/v1.0.1...v1.0.2) (2026-04-01)
 
 ### Bug Fixes
