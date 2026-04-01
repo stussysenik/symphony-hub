@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/stussysenik/symphony-hub/compare/v1.6.1...v1.7.0) (2026-04-01)
+
+### Features
+
+* **initiative:** add multi-repo issue fanout ([14a65d5](https://github.com/stussysenik/symphony-hub/commit/14a65d577c45b68e167d91c03e73a6f3a4b42c3d))
+
 ## [1.6.1](https://github.com/stussysenik/symphony-hub/compare/v1.6.0...v1.6.1) (2026-04-01)
 
 ### Bug Fixes
