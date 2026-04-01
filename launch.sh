@@ -267,6 +267,11 @@ cmd_intake() {
     exec "${SCRIPT_DIR}/linear-intake.sh" "$@"
 }
 
+cmd_initiative() {
+    load_env_if_present
+    exec "${SCRIPT_DIR}/linear-initiative.sh" "$@"
+}
+
 cmd_diagnose() {
     load_env_if_present
     exec "${SCRIPT_DIR}/linear-diagnose.sh" "$@"
@@ -492,6 +497,7 @@ Commands:
   logs <project>     Tail logs for a project
   audit [options]    Audit Linear issue hygiene across configured projects
   intake [options]   Draft a diagnosis-backed Linear intake issue from a raw prompt
+  initiative [options] Fan out one initiative prompt across multiple configured repos
   diagnose [options] Diagnose existing Linear issues against current repo state
   issuefmt [options] Canonical formatter and Todo-readiness linter for Linear issues
   recover [options]  Inspect preserved workspaces for recovery decisions
@@ -518,6 +524,7 @@ Examples:
   ./launch.sh logs v0-ipod       # Tail logs for v0-ipod
   ./launch.sh audit              # Review queue hygiene across projects
   ./launch.sh intake --project mymind-clone-web --prompt "Polish search shell focus state"
+  ./launch.sh initiative --all --title-prefix "Adopt Nix dev shell" --prompt "Adopt Nix development shells across managed repos"
   ./launch.sh diagnose --project mymind-clone-web --issue CRE-123
   ./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
   ./launch.sh recover --project mymind-clone-web
@@ -574,6 +581,9 @@ main() {
             ;;
         intake)
             cmd_intake "$@"
+            ;;
+        initiative)
+            cmd_initiative "$@"
             ;;
         diagnose)
             cmd_diagnose "$@"

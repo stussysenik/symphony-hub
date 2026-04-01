@@ -41,6 +41,7 @@ These are **new scripts** created specifically for this demo:
 | `watch-linear.sh` | 📋 Linear issue status monitor |
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
 | `linear-intake.sh` | 📝 Draft a structured Linear intake issue from a raw prompt |
+| `linear-initiative.sh` | 🗂️ Fan out one initiative prompt across multiple configured repos |
 | `linear-issuefmt.sh` | 🧾 Canonical formatter and `Todo`-readiness linter for Linear issue bodies |
 | `linear-diagnose.sh` | 🔎 Diagnose an existing Linear issue against current repo state |
 | `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
@@ -189,6 +190,7 @@ Use the smallest command that matches the operator problem:
 | Situation | Command | Why |
 |------|------|------|
 | You only have a raw NLP request | `./launch.sh intake --project <repo> --prompt "..."` | Drafts a repo-backed intake issue from scratch |
+| You want one cross-repo initiative turned into one repo-local issue per configured repo | `./launch.sh initiative --all --prompt "..."` | Fans out the prompt across managed repos using the same intake/diagnosis stack |
 | The issue already exists, but you need to know whether it is stale, implemented, or re-queueable | `./launch.sh diagnose --project <repo> --issue <ID>` | Diagnoses the existing issue against current `main` |
 | The issue exists but the body is structurally weak or inconsistent | `./launch.sh issuefmt --project <repo> --issue <ID>` | Canonicalizes the issue body and checks the `Todo` gate |
 | You want the canonical body written back to Linear | `./launch.sh issuefmt --project <repo> --issue <ID> --apply` | Rewrites the issue description in-place without deleting extra sections |
@@ -304,24 +306,48 @@ managed repos:
 The unsolved part is automatic portfolio discovery and autonomous rollout
 planning across repos you have not yet modeled in the hub.
 
+If the repos are already configured, the creation path is now programmatic:
+
+```bash
+./launch.sh initiative \
+  --all \
+  --title-prefix "Adopt Nix dev shell" \
+  --prompt "Adopt Nix development shells across all managed repos" \
+  --system-prompt "Keep each issue repo-local, concrete, and validation-heavy."
+```
+
+Behavior:
+- derives each repo slug from the configured `github_url` such as `stussysenik/v0-ipod`
+- builds one repo-local intake task per configured project
+- reuses `linear-intake.sh` underneath, so repo diagnosis and issue structure stay consistent
+- writes a local initiative bundle under `initiatives/`
+- stays dry-run by default
+- creates the Linear issues only when you add `--apply`
+
 ### Example: Adopt Nix Across All Repos
 
 Treat this as one initiative with many repo-local execution issues.
 
 1. Add each target repo to [`projects.yml`](projects.yml) if it is not already managed by the hub.
-2. Create one non-executing umbrella issue in Linear such as `Adopt Nix development shells across managed repos`.
-3. Create one child issue per repo, for example:
-   - `mymind-clone-web: add flake/devShell and document local usage`
-   - `v0-ipod: add flake/devShell and verify existing scripts inside nix shell`
-   - `recap: add flake/devShell and CI validation`
-4. For each repo issue, use the same structure:
+2. Run the fanout in dry-run mode first:
+
+   ```bash
+   ./launch.sh initiative \
+     --all \
+     --title-prefix "Adopt Nix dev shell" \
+     --prompt "Adopt Nix development shells across all managed repos"
+   ```
+
+3. Review the local initiative bundle under `initiatives/`.
+4. Re-run with `--apply` to create the repo-local child issues in Linear.
+5. For each repo issue, keep the same structure:
    - `Context`: current runtime/tooling state
    - `Problem`: why the repo is not reproducible today
    - `Desired Outcome`: what a successful Nix setup means for that repo
    - `Acceptance Criteria`: `nix develop` works, core commands work, docs exist, CI or validation passes
    - `Validation`: exact commands to run inside the dev shell
-5. Run `intake` or `issuefmt` on each child issue, keep them in `Backlog` or `Triage`, and only move a small batch to `Todo`.
-6. Use `diagnose` on stale child issues if the repo evolves underneath the campaign.
+6. Keep the issues in `Backlog` or `Triage`, and only move a small batch to `Todo`.
+7. Use `diagnose` on stale child issues if the repo evolves underneath the campaign.
 
 That is the clean portfolio pattern:
 - one umbrella initiative for coordination

@@ -65,6 +65,7 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
+- `./launch.sh initiative --all --prompt "..."`: fan out one initiative prompt across configured repos
 - `./launch.sh issuefmt --project <name> --issue <ID>`: canonicalize and lint an existing Linear issue body
 - `./launch.sh diagnose --project <name> --issue <ID>`: diagnose an existing issue against current repo state
 - `./launch.sh diagnose --project <name> --issue <ID> --apply`: write the diagnosis comment and suggested safe state change
