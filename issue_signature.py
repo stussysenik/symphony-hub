@@ -122,10 +122,12 @@ def parse_issue_body(body: str, signature: dict[str, Any]) -> dict[str, Any]:
     flush_current()
 
     recognized_values: dict[str, str] = {}
+    recognized_sequence: list[dict[str, str]] = []
     extras: list[dict[str, str]] = []
     for section in sections:
         section_id = signature["aliases"].get(normalize_heading(section["title"]))
         if section_id:
+            recognized_sequence.append({"id": section_id, "title": section["title"]})
             existing = recognized_values.get(section_id, "")
             content = section["content"]
             if existing and content:
@@ -145,6 +147,7 @@ def parse_issue_body(body: str, signature: dict[str, Any]) -> dict[str, Any]:
     return {
         "managedBlocks": managed_blocks,
         "sectionValues": recognized_values,
+        "recognizedSequence": recognized_sequence,
         "extraSections": extras,
         "preamble": preamble,
     }
@@ -252,6 +255,21 @@ def summarize_signature_issues(report: dict[str, Any]) -> str:
     return "; ".join(details)
 
 
+def _needs_structural_formatting(parsed: dict[str, Any], signature: dict[str, Any]) -> bool:
+    observed_order: list[str] = []
+    canonical_titles = {section["id"]: section["title"] for section in signature["sections"]}
+
+    for entry in parsed["recognizedSequence"]:
+        section_id = entry["id"]
+        if section_id not in observed_order:
+            observed_order.append(section_id)
+        if entry["title"] != canonical_titles[section_id]:
+            return True
+
+    canonical_order = [section["id"] for section in signature["sections"] if section["id"] in observed_order]
+    return observed_order != canonical_order
+
+
 def evaluate_issue_body(body: str, signature: dict[str, Any]) -> dict[str, Any]:
     parsed = parse_issue_body(body, signature)
     missing_required: list[str] = []
@@ -310,7 +328,7 @@ def evaluate_issue_body(body: str, signature: dict[str, Any]) -> dict[str, Any]:
         "extraSections": [section["title"] for section in parsed["extraSections"]],
         "managedBlockCount": len(parsed["managedBlocks"]),
         "managedBlockNames": [block.splitlines()[0] for block in parsed["managedBlocks"]],
-        "needsFormatting": _normalize_multiline(body) != _normalize_multiline(formatted_body),
+        "needsFormatting": _needs_structural_formatting(parsed, signature),
         "summary": "",
         "sectionReports": section_reports,
         "formattedBody": formatted_body,

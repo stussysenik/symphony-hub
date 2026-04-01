@@ -182,6 +182,166 @@ becomes execution work:
 ./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
 ```
 
+## Which Command Do I Use?
+
+Use the smallest command that matches the operator problem:
+
+| Situation | Command | Why |
+|------|------|------|
+| You only have a raw NLP request | `./launch.sh intake --project <repo> --prompt "..."` | Drafts a repo-backed intake issue from scratch |
+| The issue already exists, but you need to know whether it is stale, implemented, or re-queueable | `./launch.sh diagnose --project <repo> --issue <ID>` | Diagnoses the existing issue against current `main` |
+| The issue exists but the body is structurally weak or inconsistent | `./launch.sh issuefmt --project <repo> --issue <ID>` | Canonicalizes the issue body and checks the `Todo` gate |
+| You want the canonical body written back to Linear | `./launch.sh issuefmt --project <repo> --issue <ID> --apply` | Rewrites the issue description in-place without deleting extra sections |
+| You want the diagnosis comment and safe state change written back to Linear | `./launch.sh diagnose --project <repo> --issue <ID> --apply` | Writes the `Diagnosis Review` comment and state update |
+| You want a queue snapshot before starting work | `./launch.sh brief` or `./launch.sh audit` | Shows health, topology, checkpoint, and queue hygiene |
+| You need to inspect abandoned local-only work | `./launch.sh recover --project <repo> --root /Users/s3nik/Desktop/symphony-setup/workspaces` | Recovers preserved runtime evidence without reviving bad queue state |
+
+Operator rule:
+- `intake` is for creating or refreshing understanding from raw language.
+- `issuefmt` is for structure.
+- `diagnose` is for deciding whether the issue still deserves execution.
+- `Todo` is the execution gate, not the intake inbox.
+
+## Dry-Run vs Apply
+
+Most hub commands are preview-first by default.
+
+| Command | Default | `--apply` behavior |
+|------|------|------|
+| `./launch.sh intake` | Writes a local intake bundle only | Creates or refreshes the Linear issue |
+| `./launch.sh issuefmt` | Formats/lints and shows the canonical body | Rewrites the Linear issue description in-place |
+| `./launch.sh diagnose` | Writes a local diagnosis bundle only | Adds a `Diagnosis Review` comment and applies the safe state change |
+| `./launch.sh recover` | Inspects preserved runtime evidence only | No Linear mutation path |
+
+If you want zero Linear mutation, stay in default mode or use `issuefmt` on a
+local file/stdin:
+
+```bash
+printf '## Context\n...\n' | ./linear-issuefmt.sh --json
+./linear-issuefmt.sh --body-file ./draft.md --check
+```
+
+## Common Operator Scenarios
+
+### `audit` says `todo-unready-signature`
+
+The issue should not stay in `Todo`.
+
+1. Run `./launch.sh issuefmt --project <repo> --issue <ID>`.
+2. If the body is still missing real content, keep it in `Backlog` or `Triage`.
+3. Only move it back to `Todo` after the signature is clean.
+
+### `audit` says `todo-needs-format`
+
+The issue is substantively okay, but the body has drifted from canonical order.
+
+1. Run `./launch.sh issuefmt --project <repo> --issue <ID> --apply`.
+2. Re-run `issuefmt` or `audit`.
+3. Leave it in `Todo` only if the content still reflects current `main`.
+
+### `issuefmt` says ready, but `diagnose` says `implemented_on_main` or `rewrite_in_backlog`
+
+`diagnose` wins the queue decision.
+
+Why:
+- `issuefmt` only answers structural readiness
+- `diagnose` answers whether the issue is still relevant against current `main`
+
+So:
+- if `diagnose` says `implemented_on_main`, keep it out of execution and decide whether to archive or supersede it
+- if `diagnose` says `rewrite_in_backlog`, keep it out of `Todo` even if the body is well-structured
+- move to `Todo` only when both the signature is clean and the diagnosis still says the work deserves execution
+
+### Existing issue is real, but structurally bad
+
+Use this sequence:
+
+1. `./launch.sh diagnose --project <repo> --issue <ID>`
+2. `./launch.sh issuefmt --project <repo> --issue <ID> --apply`
+3. Rewrite the placeholders into real content
+4. Move to `Todo` only after the issue still looks relevant on current `main`
+
+### No `Triage` state on the Linear team
+
+The hub falls back to `Backlog`.
+
+That is intentional. `Backlog` is the non-executing intake state until the team
+actually exposes `Triage`.
+
+### Diagnosis says the repo is dirty or behind `origin/main`
+
+Do not execute from the canonical repo root.
+
+The rule is:
+- preserve the dirty repo root
+- treat it as evidence, not the execution workspace
+- let Symphony implement in a fresh per-issue worktree from current `origin/main`
+
+## Multi-Repo Initiatives
+
+Symphony now solves the general control-loop problem for any repo you have
+explicitly configured in [`projects.yml`](projects.yml):
+
+- intake
+- issue formatting and readiness
+- diagnosis
+- execution
+- review
+- recovery
+
+What it does not yet solve automatically is org-wide repo discovery and fan-out
+from one sentence across arbitrary GitHub repos. For that, the right pattern is
+still explicit configuration plus generated child issues.
+
+The general problem is therefore mostly solved at the control-plane level for
+managed repos:
+- reproducible intake
+- canonical issue structure
+- repo-backed diagnosis
+- execution and review loop
+- evidence preservation
+
+The unsolved part is automatic portfolio discovery and autonomous rollout
+planning across repos you have not yet modeled in the hub.
+
+### Example: Adopt Nix Across All Repos
+
+Treat this as one initiative with many repo-local execution issues.
+
+1. Add each target repo to [`projects.yml`](projects.yml) if it is not already managed by the hub.
+2. Create one non-executing umbrella issue in Linear such as `Adopt Nix development shells across managed repos`.
+3. Create one child issue per repo, for example:
+   - `mymind-clone-web: add flake/devShell and document local usage`
+   - `v0-ipod: add flake/devShell and verify existing scripts inside nix shell`
+   - `recap: add flake/devShell and CI validation`
+4. For each repo issue, use the same structure:
+   - `Context`: current runtime/tooling state
+   - `Problem`: why the repo is not reproducible today
+   - `Desired Outcome`: what a successful Nix setup means for that repo
+   - `Acceptance Criteria`: `nix develop` works, core commands work, docs exist, CI or validation passes
+   - `Validation`: exact commands to run inside the dev shell
+5. Run `intake` or `issuefmt` on each child issue, keep them in `Backlog` or `Triage`, and only move a small batch to `Todo`.
+6. Use `diagnose` on stale child issues if the repo evolves underneath the campaign.
+
+That is the clean portfolio pattern:
+- one umbrella initiative for coordination
+- one issue per repo for execution
+- repo-specific validation, not one vague cross-repo mega-ticket
+
+For a Nix rollout specifically, the per-repo acceptance bar should usually be:
+- `nix develop` starts successfully
+- the repo’s normal dev/test/build commands work inside the shell
+- any required package managers or language runtimes are pinned
+- README/setup docs explain the new path
+- CI or a local verification command proves the shell still works later
+
+The exact same pattern applies to:
+- CodeRabbit adoption
+- security baseline audits
+- CI standardization
+- release process normalization
+- shared lint/test/runtime policy changes
+
 ---
 
 ## How It Works
