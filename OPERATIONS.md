@@ -74,6 +74,7 @@ Pick your preferred surface:
 | Startup or resume brief | `./launch.sh brief` |
 | Queue hygiene audit | `./launch.sh audit` |
 | Diagnosis-first intake draft | `./launch.sh intake --project mymind-clone-web --prompt "..."` |
+| Existing-issue diagnosis | `./launch.sh diagnose --project mymind-clone-web --issue CRE-123` |
 | Source topology | `./launch.sh sources` |
 | Save resumable checkpoint | `./launch.sh checkpoint pre-review` |
 | Tail logs | `tail -f ~/Desktop/open-ai-symphony/symphony/elixir/log/symphony.log` |
@@ -240,19 +241,19 @@ This is the right place for the system to be autonomous:
 This is intentionally not the execution trigger. `Todo` remains the execution
 gate after the issue body is tightened.
 
-If the issue already exists and you want to catch it up to the current repo
-state instead of creating a new one, target it directly:
+If the issue already exists and you want to investigate it against the current
+repo state instead of drafting a new issue, use the diagnosis loop:
 
 ```bash
-./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording"
-./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording" --apply
+./launch.sh diagnose --project mymind-clone-web --issue CRE-123
+./launch.sh diagnose --project mymind-clone-web --issue CRE-123 --apply
 ```
 
-The first command previews the targeted refresh. Adding `--apply` updates the
-managed intake block while preserving the rest of the issue body.
-
-If the target issue body is empty, intake falls back to the full structured
-draft. Existing titles stay in place unless you pass `--title`.
+The first command previews the diagnosis and writes a local bundle under
+`diagnoses/`. Adding `--apply` writes a `Diagnosis Review` comment and applies
+the suggested safe queue state change. This is the command to use when you want
+the system to tell you whether the issue is already implemented on `main`,
+needs rewrite, or is ready to return to `Todo`.
 
 ### Changing spec mid-flight
 

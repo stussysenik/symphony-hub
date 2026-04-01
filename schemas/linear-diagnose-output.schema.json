@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "suggested_state",
+    "confidence",
+    "operator_summary",
+    "rationale",
+    "evidence",
+    "follow_up_title",
+    "follow_up_prompt"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "implemented_on_main",
+        "rewrite_in_backlog",
+        "ready_for_todo",
+        "keep_backlog",
+        "keep_todo",
+        "supersede_or_split",
+        "unclear"
+      ]
+    },
+    "suggested_state": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "operator_summary": {
+      "type": "string"
+    },
+    "rationale": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "follow_up_title": {
+      "type": "string"
+    },
+    "follow_up_prompt": {
+      "type": "string"
+    }
+  }
+}

@@ -241,6 +241,7 @@ def parse_args() -> argparse.Namespace:
         help="Comma-separated label names to apply. On create, defaults to the compiled suggestions if omitted.",
     )
     parser.add_argument("--model", help="Optional Codex model override.")
+    parser.add_argument("--skip-compile", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--context-issues", type=int, default=DEFAULT_CONTEXT_ISSUES, help="How many recent project issues to inspect.")
     parser.add_argument("--related-limit", type=int, default=5, help="Maximum related Linear issues to include.")
     parser.add_argument("--evidence-limit", type=int, default=8, help="Maximum code evidence hits to include.")
@@ -1158,26 +1159,30 @@ def main() -> int:
     )
 
     compile_mode = "codex"
-    try:
-        compiled = compile_with_codex(
-            schema_path=Path(os.environ["SCRIPT_DIR"]) / "schemas" / "linear-intake-output.schema.json",
-            prompt=build_prompt(
-                project=project,
-                task=task,
-                title_seed=title_seed,
-                diagnosis=diagnosis,
-                evidence=evidence,
-                auth_signals=auth_signals,
-                related_issues=related,
-                existing_issue=existing_issue,
-            ),
-            model=args.model,
-        )
-        if not validate_compiled_payload(compiled):
-            raise ValueError("Codex returned an incomplete intake payload.")
-    except (TimeoutError, ValueError):
+    if args.skip_compile:
         compiled = fallback_compile(task, title_seed, evidence, related, existing_issue)
-        compile_mode = "fallback"
+        compile_mode = "skipped"
+    else:
+        try:
+            compiled = compile_with_codex(
+                schema_path=Path(os.environ["SCRIPT_DIR"]) / "schemas" / "linear-intake-output.schema.json",
+                prompt=build_prompt(
+                    project=project,
+                    task=task,
+                    title_seed=title_seed,
+                    diagnosis=diagnosis,
+                    evidence=evidence,
+                    auth_signals=auth_signals,
+                    related_issues=related,
+                    existing_issue=existing_issue,
+                ),
+                model=args.model,
+            )
+            if not validate_compiled_payload(compiled):
+                raise ValueError("Codex returned an incomplete intake payload.")
+        except (TimeoutError, ValueError):
+            compiled = fallback_compile(task, title_seed, evidence, related, existing_issue)
+            compile_mode = "fallback"
 
     resolved_title = (args.title or (existing_issue or {}).get("title") or compiled.get("title") or title_seed).strip()
     report_payload = {

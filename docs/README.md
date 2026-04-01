@@ -46,6 +46,9 @@ Those commands are the shortest path to:
 - [proposal.md](../openspec/changes/diagnosis-first-linear-intake/proposal.md): diagnosis-first intake proposal
 - [design.md](../openspec/changes/diagnosis-first-linear-intake/design.md): intake architecture and guardrails
 - [tasks.md](../openspec/changes/diagnosis-first-linear-intake/tasks.md): intake implementation checklist
+- [proposal.md](../openspec/changes/existing-issue-diagnosis-loop/proposal.md): existing-issue diagnosis proposal
+- [design.md](../openspec/changes/existing-issue-diagnosis-loop/design.md): diagnosis loop design and guardrails
+- [tasks.md](../openspec/changes/existing-issue-diagnosis-loop/tasks.md): diagnosis implementation checklist
 
 ## Release And Delivery
 
@@ -58,8 +61,8 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
-- `./launch.sh intake --project <name> --issue <ID> --prompt "..."`: preview a targeted existing-issue refresh
-- `./launch.sh intake --project <name> --issue <ID> --prompt "..." --apply`: refresh the managed diagnosis block on an existing issue
+- `./launch.sh diagnose --project <name> --issue <ID>`: diagnose an existing issue against current repo state
+- `./launch.sh diagnose --project <name> --issue <ID> --apply`: write the diagnosis comment and suggested safe state change
 - `./linear-archive.sh --issue <ID>`: archive stale issues without deleting history
 - `./launch.sh recover --project <name> --root /Users/s3nik/Desktop/symphony-setup/workspaces`: inspect preserved workspaces before revive/archive decisions
 

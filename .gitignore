@@ -9,6 +9,7 @@ logs/
 pids/
 checkpoints/
 intakes/
+diagnoses/
 *.pid
 *.log
 

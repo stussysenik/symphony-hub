@@ -157,22 +157,21 @@ What it does:
 Use this for `Triage` intake. Do not treat it as a replacement for tightening
 the issue before `Todo`.
 
-If you already have an issue but want to refresh it against the current repo
-state, use:
+If you already have an issue and want the hub to investigate it against the
+current repo state, use the diagnosis loop:
 
 ```bash
-./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording"
-./launch.sh intake --project mymind-clone-web --issue CRE-123 --prompt "Updated task wording" --apply
+./launch.sh diagnose --project mymind-clone-web --issue CRE-123
+./launch.sh diagnose --project mymind-clone-web --issue CRE-123 --apply
 ```
 
-The first command previews the targeted refresh and writes the local report
-bundle. Adding `--apply` updates the managed intake diagnosis block without
-deleting the human-authored parts of the issue description.
+The first command previews the diagnosis and writes a local bundle under
+`diagnoses/`. Adding `--apply` writes a `Diagnosis Review` comment and applies
+the suggested safe queue state change.
 
-If the issue already has description content, only the machine-managed intake
-block is replaced or prepended. If the issue body is empty, intake falls back
-to the full structured draft. Existing titles stay in place unless you pass
-`--title`.
+Use `diagnose` when the issue already exists and the operator question is:
+"is this implemented, stale, too vague, or ready to re-queue?" Use `intake`
+when the work still starts as a raw request and needs to become a clean issue.
 
 If the requested state does not exist on the team yet, the command prints the
 resolved fallback state. In the current board shape, asking for `Triage` may

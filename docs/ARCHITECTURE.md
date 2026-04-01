@@ -216,6 +216,10 @@ symphony/elixir/lib/symphony_elixir/
             Linear Triage or issue refresh
 ```
 
+Existing-issue diagnosis reuses the same repo/evidence path, but starts from a
+live Linear ticket and writes a local bundle under `diagnoses/` before
+optionally commenting and applying a safe queue-state change.
+
 ### Vision: Asset Collection and Multimodal Input
 
 ```
