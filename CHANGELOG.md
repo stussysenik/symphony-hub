@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/stussysenik/symphony-hub/compare/v1.4.0...v1.5.0) (2026-04-01)
+
+### Features
+
+* **diagnose:** add existing issue diagnosis loop ([28eee8d](https://github.com/stussysenik/symphony-hub/commit/28eee8dee920982cc120a6dc7cfdf22e9851259e))
+
 ## [1.4.0](https://github.com/stussysenik/symphony-hub/compare/v1.3.0...v1.4.0) (2026-04-01)
 
 ### Features
