@@ -42,6 +42,7 @@ These are **new scripts** created specifically for this demo:
 | `linear-audit.sh` | 🧹 Queue hygiene audit across configured Linear projects |
 | `linear-intake.sh` | 📝 Draft a structured Linear intake issue from a raw prompt |
 | `linear-initiative.sh` | 🗂️ Fan out one initiative prompt across multiple configured repos |
+| `sync-projects.sh` | 🔄 Discover GitHub repos and sync them into the project catalog |
 | `linear-issuefmt.sh` | 🧾 Canonical formatter and `Todo`-readiness linter for Linear issue bodies |
 | `linear-diagnose.sh` | 🔎 Diagnose an existing Linear issue against current repo state |
 | `linear-archive.sh` | 🗃️ Archive stale issues with a preserved audit note |
@@ -59,7 +60,7 @@ These files are part of the Symphony system:
 
 - `launch.sh` - Symphony's multi-instance launcher
 - `config.sh` - Shared config helpers used by launch/monitor scripts
-- `projects.yml` - Project configuration (repo roots, workspace strategy, Linear slugs)
+- `projects.yml` - Managed runtime config plus the wider GitHub repo catalog
 - `generate-workflows.sh` - Workflow generator from config + template
 - `checkpoint.sh` - Snapshot current hub/engine/runtime state for continuation
 - `logs/` - Agent logs (generated at runtime)
@@ -118,6 +119,7 @@ See `docs/VISION.md` for the full guide.
 - `DASHBOARD-GUIDE.md` - Phoenix dashboard usage
 - `issue-signature.yml` - Canonical issue signature and `Todo` gate
 - `issue_signature.py` - Shared formatter/evaluator used by intake, audit, diagnose, and issuefmt
+- `project_catalog.py` - Shared config/catalog resolver used by intake, initiative, diagnose, issuefmt, and sync
 - `docs/CHECKPOINTS.md` - Local snapshot and handoff workflow
 - `docs/RESEARCH.md` - What we learned from Symphony
 - `docs/DECISIONS.md` - Why we built Hub this way
@@ -190,7 +192,8 @@ Use the smallest command that matches the operator problem:
 | Situation | Command | Why |
 |------|------|------|
 | You only have a raw NLP request | `./launch.sh intake --project <repo> --prompt "..."` | Drafts a repo-backed intake issue from scratch |
-| You want one cross-repo initiative turned into one repo-local issue per configured repo | `./launch.sh initiative --all --prompt "..."` | Fans out the prompt across managed repos using the same intake/diagnosis stack |
+| You want GitHub repo discovery reflected in the project catalog before fanout or execution | `./launch.sh sync-projects` | Discovers repos, preserves existing entries, and reports which repos are ready for diagnosis or still need Linear linking |
+| You want one cross-repo initiative turned into one repo-local issue per managed or cataloged repo | `./launch.sh initiative --all --prompt "..."` | Fans out the prompt across the managed runtime set plus the synced GitHub catalog |
 | The issue already exists, but you need to know whether it is stale, implemented, or re-queueable | `./launch.sh diagnose --project <repo> --issue <ID>` | Diagnoses the existing issue against current `main` |
 | The issue exists but the body is structurally weak or inconsistent | `./launch.sh issuefmt --project <repo> --issue <ID>` | Canonicalizes the issue body and checks the `Todo` gate |
 | You want the canonical body written back to Linear | `./launch.sh issuefmt --project <repo> --issue <ID> --apply` | Rewrites the issue description in-place without deleting extra sections |
@@ -211,6 +214,8 @@ Most hub commands are preview-first by default.
 | Command | Default | `--apply` behavior |
 |------|------|------|
 | `./launch.sh intake` | Writes a local intake bundle only | Creates or refreshes the Linear issue |
+| `./launch.sh initiative` | Writes a local initiative bundle only | Creates the repo-local Linear issues for repos that have Linear mapping or an override |
+| `./launch.sh sync-projects` | Writes a local sync report only | Persists the merged GitHub catalog back to `projects.yml` |
 | `./launch.sh issuefmt` | Formats/lints and shows the canonical body | Rewrites the Linear issue description in-place |
 | `./launch.sh diagnose` | Writes a local diagnosis bundle only | Adds a `Diagnosis Review` comment and applies the safe state change |
 | `./launch.sh recover` | Inspects preserved runtime evidence only | No Linear mutation path |
@@ -303,51 +308,91 @@ managed repos:
 - execution and review loop
 - evidence preservation
 
-The unsolved part is automatic portfolio discovery and autonomous rollout
-planning across repos you have not yet modeled in the hub.
+The remaining unsolved part is automatic Linear mapping and policy shaping for
+newly discovered repos. GitHub discovery itself is now programmatic, but issue
+creation still needs either a per-repo `linear_project_slug` or an explicit
+shared override.
 
-If the repos are already configured, the creation path is now programmatic:
+Use `sync-projects` to pull GitHub discovery into the same operator surface:
+
+```bash
+./launch.sh sync-projects
+./launch.sh sync-projects --owner stussysenik --apply --clone-missing
+```
+
+Behavior:
+- reads `catalog.github_owner`, `catalog.repo_root_parent`, and `catalog.defaults` from [`projects.yml`](projects.yml)
+- discovers repos from GitHub and normalizes them as `owner/repo`
+- never deletes existing project entries
+- updates the active `projects` list when a repo is already managed there
+- adds newly discovered repos under `catalog.projects` instead of forcing them into the runtime set
+- preserves manual fields like `repo_root`, `linear_project_slug`, `intake`, and `assets` when a catalog entry already exists
+- writes a local report bundle under `syncs/`
+
+Important boundary:
+- if a synced repo has no `linear_project_slug`, it is discoverable but not yet issue-creation ready
+- if a synced repo has no local checkout, repo-backed diagnosis still needs `--clone-missing` or a manual clone at the configured `repo_root`
+
+If the repos are already configured or you provide a shared Linear target, the
+creation path is now programmatic:
 
 ```bash
 ./launch.sh initiative \
   --all \
   --title-prefix "Adopt Nix dev shell" \
   --prompt "Adopt Nix development shells across all managed repos" \
-  --system-prompt "Keep each issue repo-local, concrete, and validation-heavy."
+  --system-prompt "Keep each issue repo-local, concrete, and validation-heavy." \
+  --linear-project-slug "<linear-project-id>"
 ```
 
 Behavior:
 - derives each repo slug from the configured `github_url` such as `stussysenik/v0-ipod`
-- builds one repo-local intake task per configured project
+- builds one repo-local intake task per managed or cataloged project
 - reuses `linear-intake.sh` underneath, so repo diagnosis and issue structure stay consistent
 - writes a local initiative bundle under `initiatives/`
 - stays dry-run by default
 - creates the Linear issues only when you add `--apply`
+- skips issue creation only when the repo has neither a configured `linear_project_slug` nor a shared `--linear-project-slug` override
 
 ### Example: Adopt Nix Across All Repos
 
 Treat this as one initiative with many repo-local execution issues.
 
-1. Add each target repo to [`projects.yml`](projects.yml) if it is not already managed by the hub.
-2. Run the fanout in dry-run mode first:
+1. Sync GitHub discovery into [`projects.yml`](projects.yml) first:
+
+   ```bash
+   ./launch.sh sync-projects --owner stussysenik
+   ```
+
+2. Apply the catalog update when the preview looks correct:
+
+   ```bash
+   ./launch.sh sync-projects --owner stussysenik --apply --clone-missing
+   ```
+
+3. Clone any repo you actually want diagnosis-backed intake for, if it is not
+   already present at the configured `repo_root`.
+
+4. Run the fanout in dry-run mode first:
 
    ```bash
    ./launch.sh initiative \
      --all \
      --title-prefix "Adopt Nix dev shell" \
-     --prompt "Adopt Nix development shells across all managed repos"
+     --prompt "Adopt Nix development shells across all managed repos" \
+     --linear-project-slug "<linear-project-id>"
    ```
 
-3. Review the local initiative bundle under `initiatives/`.
-4. Re-run with `--apply` to create the repo-local child issues in Linear.
-5. For each repo issue, keep the same structure:
+5. Review the local initiative bundle under `initiatives/`.
+6. Re-run with `--apply` to create the repo-local child issues in Linear.
+7. For each repo issue, keep the same structure:
    - `Context`: current runtime/tooling state
    - `Problem`: why the repo is not reproducible today
    - `Desired Outcome`: what a successful Nix setup means for that repo
    - `Acceptance Criteria`: `nix develop` works, core commands work, docs exist, CI or validation passes
    - `Validation`: exact commands to run inside the dev shell
-6. Keep the issues in `Backlog` or `Triage`, and only move a small batch to `Todo`.
-7. Use `diagnose` on stale child issues if the repo evolves underneath the campaign.
+7. Keep the issues in `Backlog` or `Triage`, and only move a small batch to `Todo`.
+8. Use `diagnose` on stale child issues if the repo evolves underneath the campaign.
 
 That is the clean portfolio pattern:
 - one umbrella initiative for coordination
@@ -455,6 +500,7 @@ symphony-hub/
 │   ├── watch-events.sh      # Event highlighter
 │   ├── watch-linear.sh      # Linear status monitor
 │   ├── linear-audit.sh      # Queue hygiene report
+│   ├── sync-projects.sh     # GitHub discovery -> projects.yml sync
 │   └── linear-new.sh        # Pre-filled Linear issue composer launcher
 │
 ├── Symphony Core
@@ -516,6 +562,8 @@ symphony-hub/
 └── Runtime (Git Ignored)
     ├── logs/                # Symphony logs
     ├── pids/                # Process IDs
+    ├── syncs/               # GitHub discovery sync reports
+    ├── initiatives/         # Cross-repo issue fanout reports
     └── workspaces/          # Agent workspaces
 ```
 

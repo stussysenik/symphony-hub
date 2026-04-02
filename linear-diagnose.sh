@@ -31,10 +31,9 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, os.environ["SCRIPT_DIR"])
 from issue_signature import evaluate_issue_body, load_signature
+from project_catalog import find_project, load_config
 
 LINEAR_API_URL = "https://api.linear.app/graphql"
 DEFAULT_REPORT_ROOT = Path(os.environ["SCRIPT_DIR"]) / "diagnoses"
@@ -142,19 +141,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report-root", default=str(DEFAULT_REPORT_ROOT), help="Local diagnosis report directory root.")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     return parser.parse_args()
-
-
-def load_config(config_path: Path) -> dict:
-    with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
-
-
-def get_project(config: dict, project_name: str) -> dict:
-    for project in config.get("projects", []):
-        if project.get("name") == project_name:
-            return project
-    raise SystemExit(f"Configured project '{project_name}' not found in {os.environ['CONFIG_FILE']}")
-
 
 def run_command(args: list[str], cwd: Path | None = None, check: bool = True, timeout: float | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=str(cwd) if cwd else None, check=check, text=True, capture_output=True, timeout=timeout)
@@ -642,7 +628,15 @@ def preview(results: list[dict], report_dir: Path, apply: bool) -> None:
 def main() -> int:
     args = parse_args()
     config = load_config(Path(os.environ["CONFIG_FILE"]))
-    project = get_project(config, args.project)
+    project = find_project(config, args.project)
+    if not project:
+        raise SystemExit(f"Configured project '{args.project}' not found in {os.environ['CONFIG_FILE']}")
+    linear_project_slug = (project.get("linear_project_slug") or "").strip()
+    if not linear_project_slug:
+        raise SystemExit(
+            f"No linear_project_slug configured for '{project['name']}'. "
+            "Map the repo in projects.yml before running diagnose."
+        )
     repo_root = Path(project["repo_root"]).expanduser()
     if not repo_root.exists():
         raise SystemExit(f"Configured repo_root does not exist: {repo_root}")
@@ -650,7 +644,7 @@ def main() -> int:
     if not args.no_fetch:
         run_command(["git", "fetch", "--quiet", "origin", project.get("default_branch", "main"), "--prune"], cwd=repo_root, check=False)
 
-    project_context = fetch_project_context(project["linear_project_slug"])
+    project_context = fetch_project_context(linear_project_slug)
     target_issues = select_issues(project_context, args.issues or [], set(args.states or DEFAULT_STATES), args.limit)
 
     report_dir = Path(args.report_root).expanduser()

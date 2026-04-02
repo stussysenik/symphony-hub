@@ -39,7 +39,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+from project_catalog import all_projects, load_config, normalize_repo_slug
 
 DEFAULT_REPORT_ROOT = Path(os.environ["SCRIPT_DIR"]) / "initiatives"
 
@@ -57,6 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--system-prompt", help="Optional shared operator guidance appended to every repo-local issue request.")
     parser.add_argument("--system-prompt-file", help="Path to a file containing the shared system prompt.")
     parser.add_argument("--title-prefix", help="Optional per-repo title prefix, e.g. 'Adopt Nix dev shell'.")
+    parser.add_argument("--linear-project-slug", help="Override the configured Linear project slug for every targeted repo.")
     parser.add_argument("--labels", default="", help="Comma-separated label names forwarded to each intake run.")
     parser.add_argument("--status", default="Triage", help="Initial state for created issues; defaults to Triage.")
     parser.add_argument("--apply", action="store_true", help="Create the repo-local Linear issues. Dry-run by default.")
@@ -83,28 +85,13 @@ def load_text(value: str | None, path: str | None, stdin_path: str | None = None
     if required:
         raise SystemExit(f"Provide --{field_name}, --{field_name}-file, or pipe the text on stdin.")
     return ""
-
-
-def load_config(config_path: Path) -> dict:
-    with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
-
-
-def normalize_repo_slug(github_url: str) -> str:
-    cleaned = (github_url or "").strip()
-    cleaned = re.sub(r"\.git$", "", cleaned)
-    cleaned = re.sub(r"^https://github\.com/", "", cleaned)
-    cleaned = re.sub(r"^git@github\.com:", "", cleaned)
-    return cleaned.strip("/")
-
-
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "initiative"
 
 
 def select_projects(config: dict, args: argparse.Namespace) -> list[dict]:
-    configured = config.get("projects", [])
+    configured = all_projects(config)
     if args.all:
         return configured
 
@@ -177,6 +164,8 @@ def run_intake(script_path: Path, project: dict, task: str, args: argparse.Names
     ]
     if args.title_prefix:
         cmd.extend(["--title", f"{project['name']}: {args.title_prefix}"])
+    if args.linear_project_slug:
+        cmd.extend(["--linear-project-slug", args.linear_project_slug])
     if args.labels.strip():
         cmd.extend(["--labels", args.labels.strip()])
     if args.apply:
@@ -249,11 +238,20 @@ def main() -> int:
         github_slug = normalize_repo_slug(project.get("github_url", ""))
         task = build_repo_task(prompt, system_prompt, project, github_slug)
         try:
+            resolved_linear_slug = (args.linear_project_slug or project.get("linear_project_slug") or "").strip()
+            repo_root = Path(project.get("repo_root", "")).expanduser()
+            if not resolved_linear_slug:
+                raise RuntimeError(
+                    "Missing linear_project_slug. Provide --linear-project-slug or map the repo in projects.yml."
+                )
+            if not repo_root.exists():
+                raise RuntimeError(f"Configured repo_root does not exist: {repo_root}")
             intake_output = run_intake(intake_script, project, task, args, intake_report_root)
             result = {
                 "project": project["name"],
                 "githubSlug": github_slug,
                 "repoRoot": project["repo_root"],
+                "linearProjectSlug": resolved_linear_slug,
                 "status": "ok",
                 "title": intake_output["title"],
                 "recommendedState": intake_output["recommendedState"],

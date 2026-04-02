@@ -272,6 +272,11 @@ cmd_initiative() {
     exec "${SCRIPT_DIR}/linear-initiative.sh" "$@"
 }
 
+cmd_sync_projects() {
+    load_env_if_present
+    exec "${SCRIPT_DIR}/sync-projects.sh" "$@"
+}
+
 cmd_diagnose() {
     load_env_if_present
     exec "${SCRIPT_DIR}/linear-diagnose.sh" "$@"
@@ -498,6 +503,7 @@ Commands:
   audit [options]    Audit Linear issue hygiene across configured projects
   intake [options]   Draft a diagnosis-backed Linear intake issue from a raw prompt
   initiative [options] Fan out one initiative prompt across multiple configured repos
+  sync-projects [options] Discover GitHub repos and sync them into projects.yml
   diagnose [options] Diagnose existing Linear issues against current repo state
   issuefmt [options] Canonical formatter and Todo-readiness linter for Linear issues
   recover [options]  Inspect preserved workspaces for recovery decisions
@@ -524,6 +530,7 @@ Examples:
   ./launch.sh logs v0-ipod       # Tail logs for v0-ipod
   ./launch.sh audit              # Review queue hygiene across projects
   ./launch.sh intake --project mymind-clone-web --prompt "Polish search shell focus state"
+  ./launch.sh sync-projects      # Discover GitHub repos into projects.yml (dry-run)
   ./launch.sh initiative --all --title-prefix "Adopt Nix dev shell" --prompt "Adopt Nix development shells across managed repos"
   ./launch.sh diagnose --project mymind-clone-web --issue CRE-123
   ./launch.sh issuefmt --project mymind-clone-web --issue CRE-123
@@ -584,6 +591,9 @@ main() {
             ;;
         initiative)
             cmd_initiative "$@"
+            ;;
+        sync-projects)
+            cmd_sync_projects "$@"
             ;;
         diagnose)
             cmd_diagnose "$@"

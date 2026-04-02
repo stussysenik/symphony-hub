@@ -53,6 +53,12 @@ Those commands are the shortest path to:
 - [proposal.md](../openspec/changes/canonical-issue-signature/proposal.md): canonical issue signature proposal
 - [design.md](../openspec/changes/canonical-issue-signature/design.md): issue signature and `Todo` gate design
 - [tasks.md](../openspec/changes/canonical-issue-signature/tasks.md): issue signature implementation checklist
+- [proposal.md](../openspec/changes/github-project-catalog-sync/proposal.md): GitHub repo catalog sync proposal
+- [design.md](../openspec/changes/github-project-catalog-sync/design.md): managed runtime vs catalog design
+- [tasks.md](../openspec/changes/github-project-catalog-sync/tasks.md): catalog sync implementation checklist
+- [proposal.md](../openspec/changes/github-project-sync/proposal.md): GitHub repo discovery and config sync proposal
+- [design.md](../openspec/changes/github-project-sync/design.md): sync command behavior and readiness boundaries
+- [tasks.md](../openspec/changes/github-project-sync/tasks.md): project sync implementation checklist
 
 ## Release And Delivery
 
@@ -65,7 +71,8 @@ Those commands are the shortest path to:
 
 - `./launch.sh audit`: queue hygiene snapshot
 - `./launch.sh intake --project <name> --prompt "..."`: draft an evidence-backed `Triage` issue from a raw request
-- `./launch.sh initiative --all --prompt "..."`: fan out one initiative prompt across configured repos
+- `./launch.sh sync-projects --owner <owner>`: discover GitHub repos and sync them into `catalog.projects`
+- `./launch.sh initiative --all --prompt "..."`: fan out one initiative prompt across managed repos plus the synced catalog
 - `./launch.sh issuefmt --project <name> --issue <ID>`: canonicalize and lint an existing Linear issue body
 - `./launch.sh diagnose --project <name> --issue <ID>`: diagnose an existing issue against current repo state
 - `./launch.sh diagnose --project <name> --issue <ID> --apply`: write the diagnosis comment and suggested safe state change
@@ -90,6 +97,7 @@ Move work into `Ready` only after `issuefmt` says the signature is clean.
 - `symphony-hub`: canonical operator repo
 - `symphony-setup`: runtime evidence locker for preserved workspaces and logs
 - product repos: actual implementation targets
+- `catalog.projects` in `projects.yml`: discovered fleet inventory, not the active runtime set
 
 ## Code Location Model
 

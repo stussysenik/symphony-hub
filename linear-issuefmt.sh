@@ -38,10 +38,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, os.environ["SCRIPT_DIR"])
 from issue_signature import evaluate_issue_body, load_signature
+from project_catalog import find_project, load_config
 
 LINEAR_API_URL = "https://api.linear.app/graphql"
 
@@ -100,19 +99,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check", action="store_true", help="Exit non-zero if formatting changes are needed or the issue is not Todo-ready.")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     return parser.parse_args()
-
-
-def load_config(config_path: Path) -> dict:
-    with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
-
-
-def get_project(config: dict, project_name: str) -> dict:
-    for project in config.get("projects", []):
-        if project.get("name") == project_name:
-            return project
-    raise SystemExit(f"Configured project '{project_name}' not found in {os.environ['CONFIG_FILE']}")
-
 
 def graphql(query: str, variables: dict) -> dict:
     api_key = os.environ.get("LINEAR_API_KEY", "").strip()
@@ -196,7 +182,9 @@ def terminal_preview(report: dict) -> str:
 def main() -> int:
     args = parse_args()
     config = load_config(Path(os.environ["CONFIG_FILE"]))
-    project = get_project(config, args.project) if args.project else None
+    project = find_project(config, args.project) if args.project else None
+    if args.project and not project:
+        raise SystemExit(f"Configured project '{args.project}' not found in {os.environ['CONFIG_FILE']}")
     signature = load_signature(Path(os.environ["SCRIPT_DIR"]) / "issue-signature.yml")
     body, input_mode, issue = read_body(args)
 

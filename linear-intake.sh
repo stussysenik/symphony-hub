@@ -44,10 +44,9 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, os.environ["SCRIPT_DIR"])
 from issue_signature import get_managed_block_markers, load_signature, render_signature_sections, upsert_managed_block as signature_upsert_managed_block
+from project_catalog import find_project, load_config
 
 LINEAR_API_URL = "https://api.linear.app/graphql"
 DEFAULT_REPORT_ROOT = Path(os.environ["SCRIPT_DIR"]) / "intakes"
@@ -243,6 +242,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt", dest="task_legacy", help="Legacy alias for --task.")
     parser.add_argument("--prompt-file", dest="task_file_legacy", help="Legacy alias for --task-file.")
     parser.add_argument("--issue", help="Existing Linear issue identifier to refine instead of creating a new issue.")
+    parser.add_argument("--linear-project-slug", help="Override the configured Linear project slug for this run.")
     parser.add_argument("--status", default=DEFAULT_CREATE_STATE, help="State to apply on create; default Triage.")
     parser.add_argument("--apply", action="store_true", help="Create or update the issue in Linear.")
     parser.add_argument(
@@ -283,19 +283,6 @@ def load_task(args: argparse.Namespace) -> str:
     if stdin_capture:
         return Path(stdin_capture).read_text(encoding="utf-8").strip()
     raise SystemExit("Provide --task, --task-file, or pipe task text on stdin.")
-
-
-def load_config(config_path: Path) -> dict:
-    with config_path.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
-
-
-def get_project(config: dict, project_name: str) -> dict:
-    for project in config.get("projects", []):
-        if project.get("name") == project_name:
-            return project
-    raise SystemExit(f"Configured project '{project_name}' not found in {os.environ['CONFIG_FILE']}")
-
 
 def run_command(args: list[str], cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=str(cwd) if cwd else None, check=check, text=True, capture_output=True)
@@ -1112,16 +1099,24 @@ def main() -> int:
     args = parse_args()
     task = load_task(args)
     config = load_config(Path(os.environ["CONFIG_FILE"]))
-    project = get_project(config, args.project)
+    project = find_project(config, args.project)
+    if not project:
+        raise SystemExit(f"Configured project '{args.project}' not found in {os.environ['CONFIG_FILE']}")
     intake_config = project.get("intake", {})
     default_branch = project.get("default_branch") or config.get("defaults", {}).get("default_branch", "main")
     repo_root = Path(project["repo_root"]).expanduser()
+    linear_project_slug = (args.linear_project_slug or project.get("linear_project_slug") or "").strip()
     if not repo_root.exists():
         raise SystemExit(f"Configured repo_root does not exist: {repo_root}")
+    if not linear_project_slug:
+        raise SystemExit(
+            f"No linear_project_slug configured for '{project['name']}'. "
+            "Provide --linear-project-slug or update projects.yml."
+        )
 
     search_roots = normalize_roots(repo_root, intake_config.get("writable_paths", []))
     excluded_globs = build_excluded_globs(intake_config.get("restricted_paths", []))
-    linear_context = fetch_linear_context(project["linear_project_slug"], max(args.context_issues, 25))
+    linear_context = fetch_linear_context(linear_project_slug, max(args.context_issues, 25))
     existing_issue = fetch_issue(args.issue) if args.issue else None
     if existing_issue and linear_context and existing_issue.get("project", {}).get("id") != linear_context["id"]:
         raise SystemExit(f"{args.issue} does not belong to configured project '{args.project}'.")
@@ -1179,7 +1174,7 @@ def main() -> int:
             "name": project["name"],
             "repoRoot": str(repo_root),
             "defaultBranch": default_branch,
-            "linearProjectSlug": project["linear_project_slug"],
+            "linearProjectSlug": linear_project_slug,
         },
         "intakeConfig": intake_config,
         "titleSeed": title_seed,

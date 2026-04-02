@@ -11,6 +11,7 @@ checkpoints/
 intakes/
 diagnoses/
 initiatives/
+syncs/
 *.pid
 *.log
 

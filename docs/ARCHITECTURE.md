@@ -62,6 +62,7 @@ symphony-hub/
 ├── LINEAR-GOLDEN-RULE.md      # Minimal quick-start for Linear workflow
 ├── launch.sh                  # Multi-instance Symphony launcher
 ├── config.sh                  # Shared config reader for shell tools
+├── sync-projects.sh           # GitHub discovery -> repo catalog sync
 ├── demo.sh                    # Interactive menu launcher
 ├── watch-demo.sh              # 4-pane tmux monitoring dashboard
 ├── watch-workspace.sh         # Git/file change monitor
@@ -380,6 +381,26 @@ projects:
       scan_project_dirs: true
       capture_screenshots: false
       supported_formats: [png, jpg, gif, webp, svg, figma]
+
+catalog:
+  github_owner: "your-user"
+  repo_root_parent: "/path/to/local/repos"
+  defaults:
+    linear_project_slug: ""    # optional shared default for cataloged repos
+    max_agents: 2
+    workspace_strategy: "worktree"
+    intake:
+      team_key: "CRE"
+      default_state: "Triage"
+    assets:
+      collect_attachments: true
+  projects:
+    - name: "catalog-only-repo"
+      github_slug: "your-user/catalog-only-repo"
+      github_url: "https://github.com/your-user/catalog-only-repo.git"
+      repo_root: "/path/to/local/repos/catalog-only-repo"
+      linear_project_slug: ""  # blank until mapped or overridden at runtime
+      managed: false
 ```
 
 ### Environment Variables
