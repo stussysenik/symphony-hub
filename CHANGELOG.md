@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/stussysenik/symphony-hub/compare/v1.7.0...v1.8.0) (2026-04-02)
+
+### Features
+
+* **catalog:** add github repo sync ([2e15fe5](https://github.com/stussysenik/symphony-hub/commit/2e15fe511b92d865c87582b491ceb625cc14eaee))
+
 ## [1.7.0](https://github.com/stussysenik/symphony-hub/compare/v1.6.1...v1.7.0) (2026-04-01)
 
 ### Features
