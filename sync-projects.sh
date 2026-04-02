@@ -73,6 +73,10 @@ def ensure_gh_available() -> None:
     result = run_command(["gh", "--version"])
     if result.returncode != 0:
         raise SystemExit("GitHub CLI 'gh' is required for sync-projects.")
+    auth = run_command(["gh", "auth", "status"])
+    if auth.returncode != 0:
+        stderr = auth.stderr.strip() or auth.stdout.strip()
+        raise SystemExit(f"gh auth status failed: {stderr}")
 
 
 def infer_owner(config: dict) -> str:
@@ -199,16 +203,12 @@ def merge_sync_metadata(project: dict, repo: dict, owner: str, synced_at: str) -
     sync = project.get("sync")
     if not isinstance(sync, dict):
         sync = {}
-    sync.update(
-        {
-            "source": "github",
-            "owner": owner,
-            "github_slug": repo["nameWithOwner"],
-            "private": bool(repo["isPrivate"]),
-            "archived": bool(repo["isArchived"]),
-            "synced_at": synced_at,
-        }
-    )
+    sync["source"] = "github"
+    sync["owner"] = owner
+    sync["github_slug"] = repo["nameWithOwner"]
+    sync["private"] = bool(repo["isPrivate"])
+    sync["archived"] = bool(repo["isArchived"])
+    sync.setdefault("synced_at", synced_at)
     project["sync"] = sync
 
 
@@ -423,7 +423,8 @@ def main() -> int:
 
     if args.apply:
         save_config(config_path, config)
-        regenerate_workflows(Path(os.environ["SCRIPT_DIR"]))
+        if managed_updated:
+            regenerate_workflows(Path(os.environ["SCRIPT_DIR"]))
 
     (run_dir / "summary.json").write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
     (run_dir / "SUMMARY.md").write_text(render_summary(output), encoding="utf-8")

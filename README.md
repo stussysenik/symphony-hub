@@ -327,6 +327,8 @@ Behavior:
 - updates the active `projects` list when a repo is already managed there
 - adds newly discovered repos under `catalog.projects` instead of forcing them into the runtime set
 - preserves manual fields like `repo_root`, `linear_project_slug`, `intake`, and `assets` when a catalog entry already exists
+- can optionally clone missing repos during `--apply --clone-missing`
+- regenerates workflows on apply only when managed runtime project metadata actually changed
 - writes a local report bundle under `syncs/`
 
 Important boundary:
@@ -370,8 +372,8 @@ Treat this as one initiative with many repo-local execution issues.
    ./launch.sh sync-projects --owner stussysenik --apply --clone-missing
    ```
 
-3. Clone any repo you actually want diagnosis-backed intake for, if it is not
-   already present at the configured `repo_root`.
+3. If you prefer not to clone during sync, manually clone any repo you actually
+   want diagnosis-backed intake for at its configured `repo_root`.
 
 4. Run the fanout in dry-run mode first:
 

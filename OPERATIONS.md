@@ -74,6 +74,7 @@ Pick your preferred surface:
 | Startup or resume brief | `./launch.sh brief` |
 | Queue hygiene audit | `./launch.sh audit` |
 | Diagnosis-first intake draft | `./launch.sh intake --project mymind-clone-web --prompt "..."` |
+| GitHub repo catalog sync | `./launch.sh sync-projects --owner stussysenik` |
 | Canonical issue formatting / lint | `./launch.sh issuefmt --project mymind-clone-web --issue CRE-123` |
 | Existing-issue diagnosis | `./launch.sh diagnose --project mymind-clone-web --issue CRE-123` |
 | Source topology | `./launch.sh sources` |
@@ -120,6 +121,10 @@ This keeps review simple:
 - `symphony-hub/workspaces` = live execution artifact
 - product repo root = shipped code
 - `symphony-setup/workspaces` = legacy evidence artifact
+
+Keep the repo inventory separate from the active runtime set:
+- `projects`: actively managed repos with workflows and runtime expectations
+- `catalog.projects`: GitHub-discovered repos that can feed intake/initiative, but are not launched automatically
 
 ### 4. Land
 

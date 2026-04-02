@@ -385,6 +385,10 @@ projects:
 catalog:
   github_owner: "your-user"
   repo_root_parent: "/path/to/local/repos"
+  include_forks: false
+  include_archived: false
+  clone_missing: false
+  excluded_repo_slugs: ["your-user/symphony-hub", "your-user/symphony"]
   defaults:
     linear_project_slug: ""    # optional shared default for cataloged repos
     max_agents: 2
