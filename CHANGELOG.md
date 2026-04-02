@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/stussysenik/symphony-hub/compare/v1.8.0...v1.8.1) (2026-04-02)
+
+### Bug Fixes
+
+* **sync:** harden github project catalog workflow ([cdeb5fe](https://github.com/stussysenik/symphony-hub/commit/cdeb5fed80d9999c0173e9449b0f750487f0ecb2))
+
 ## [1.8.0](https://github.com/stussysenik/symphony-hub/compare/v1.7.0...v1.8.0) (2026-04-02)
 
 ### Features
